@@ -3,7 +3,6 @@ import ProductManager from "./src/managers/ProductManager.js";
 import CartManager from "./src/managers/CartManager.js";
 import { engine } from 'express-handlebars';
 import path from 'path';
-import methodOverride from 'method-override';
 
 const app = express();
 app.use(express.json());
@@ -20,9 +19,6 @@ app.engine('handlebars', engine({
 
 app.set('view engine', 'handlebars');
 app.set('views', path.join(process.cwd(), 'src/views'));
-app.use(methodOverride('_method'));
-
-
 
 //Ruta Raiz
 app.get('/', async (req, res) => {
@@ -57,7 +53,6 @@ app.get('/realtimeproducts', async (req, res) => {
       });
   }
 });
-
 
 //Productos
 
@@ -112,7 +107,7 @@ app.post('/api/products', async (req, res) => {
       const newProduct = {
           title,
           description,
-          price: parseInt(price), // Cambiar a parseInt para enteros
+          price: parseInt(price),
           status: status === 'true',
           stock: parseInt(stock),
           category,
@@ -165,10 +160,10 @@ app.put("/api/products/:pid", async (req, res) => {
     }
 });
 
-//Elimina un producto
-app.delete('/api/products/:id', async (req, res) => {
+// Eliminar producto usando POST (funciona sin problemas)
+app.post('/api/products/:pid/delete', async (req, res) => {
   try {
-      const productId = req.params.id;
+      const productId = req.params.pid;
       await productManager.deleteProductById(productId);
       
       // Obtener la lista actualizada y renderizar la vista
@@ -186,6 +181,26 @@ app.delete('/api/products/:id', async (req, res) => {
           title: 'Productos en Tiempo Real',
           products: products,
           error: `Error al eliminar producto: ${error.message}`
+      });
+  }
+});
+
+// Mantener también la ruta DELETE para APIs externas (si las necesitas)
+app.delete('/api/products/:pid', async (req, res) => {
+  try {
+      const productId = req.params.pid;
+      await productManager.deleteProductById(productId);
+      
+      res.json({
+          status: "success",
+          message: "Producto eliminado exitosamente"
+      });
+      
+  } catch (error) {
+      res.status(500).json({ 
+          status: "error", 
+          message: "Error al eliminar el producto", 
+          error: error.message 
       });
   }
 });
@@ -247,8 +262,7 @@ app.post("/api/carts/:cid/product/:pid", async (req, res) => {
     }
 });
 
-
 //Utilizar un puerto
 app.listen(8080, () => {
-    console.log(`Servidor iniciado`);
+    console.log(`Servidor iniciado en puerto 8080`);
 });

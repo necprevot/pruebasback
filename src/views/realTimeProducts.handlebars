@@ -59,13 +59,9 @@
 <hr>
 
 <h3>Lista de Productos</h3>
-{{
-#if
- products}}
+{{#if products}}
     <ul>
-        {{
-#each
- products}}
+        {{#each products}}
         <li>
             <strong>{{this.title}}</strong> - ${{this.price}}
             <br>
@@ -74,41 +70,24 @@
             <small>
                 Stock: {{this.stock}} | 
                 Categoría: {{this.category}} | 
-                Estado: {{
-#if
- this.status}}Activo{{else}}Inactivo{{
-/if
-}} | 
+                Estado: {{#if this.status}}Activo{{else}}Inactivo{{/if}} | 
                 Código: {{this.code}}
             </small>
-            {{
-#if
- this.thumbnails}}
-                {{
-#if
- this.thumbnails.length}}
+            {{#if this.thumbnails}}
+                {{#if this.thumbnails.length}}
                     <br>
                     <small>Imágenes: {{this.thumbnails.length}} archivo(s)</small>
-                {{
-/if
-}}
-            {{
-/if
-}}
+                {{/if}}
+            {{/if}}
             <br>
-            <form action="/api/products/{{this.id}}" method="POST" style="display: inline; margin-top: 5px;">
-                <input type="hidden" name="_method" value="DELETE">
+            <form action="/api/products/{{this.id}}/delete" method="POST" style="display: inline; margin-top: 5px;">
                 <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; cursor: pointer;" onclick="return confirm('¿Estás seguro de que quieres eliminar este producto?')">
                     Eliminar
                 </button>
             </form>
         </li>
-        {{
-/each
-}}
+        {{/each}}
     </ul>
 {{else}}
     <p>No hay productos disponibles.</p>
-{{
-/if
-}}
+{{/if}}
