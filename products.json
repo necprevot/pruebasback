@@ -7,7 +7,7 @@
     "status": true,
     "stock": 250,
     "category": "ofertas",
-    "thumbnails": [],
+    "thumbnails": "./public/products/zanahorias.png",
     "code": "1278444621654"
   },
   {
@@ -18,7 +18,7 @@
     "status": true,
     "stock": 200,
     "category": "nuevos",
-    "thumbnails": [],
+    "thumbnails": "./public/products/cerezas.png",
     "code": "1786689265383"
   }
 ]
