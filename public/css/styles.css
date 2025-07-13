@@ -93,6 +93,33 @@ h3 {
     margin: 20px 0 15px 0;
 }
 
+/* Interruptor de administrador */
+.admin-toggle {
+    background-color: var(--light-gray);
+    padding: 15px;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+    margin-bottom: 20px;
+}
+
+.admin-toggle label {
+    margin-bottom: 0;
+    font-size: 1.1rem;
+}
+
+#adminToggle {
+    width: auto !important;
+    min-width: 80px;
+    font-weight: bold;
+}
+
+#adminStatus {
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background-color: var(--secondary-color);
+}
+
 /* Alertas y mensajes */
 .alert {
     padding: 12px 15px;

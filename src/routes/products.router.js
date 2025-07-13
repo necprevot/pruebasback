@@ -42,9 +42,20 @@ router.get("/:pid", async (req, res) => {
     }
 });
 
-//Agregar nuevo producto - EMITE WEBSOCKET
+//Agregar nuevo producto - EMITE WEBSOCKET - CON VALIDACIÓN ADMIN
 router.post('/', async (req, res) => {
   try {
+      // Validación básica de administrador (mejorar en el futuro)
+      const isAdmin = req.body.isAdmin === 'true' || req.headers['x-admin-mode'] === 'true';
+      
+      if (!isAdmin) {
+          return res.status(403).render('realTimeProducts', { 
+              title: 'Productos en Tiempo Real',
+              products: await productManager.getProducts(),
+              error: 'Solo los administradores pueden agregar productos'
+          });
+      }
+
       const { title, description, price, status, stock, category, thumbnails } = req.body;
       
       // Procesar thumbnails (convertir nombres de archivo a rutas completas)
@@ -115,9 +126,20 @@ router.put("/:pid", async (req, res) => {
     }
 });
 
-// Eliminar producto usando POST - EMITE WEBSOCKET
+// Eliminar producto usando POST - EMITE WEBSOCKET - CON VALIDACIÓN ADMIN
 router.post('/:pid/delete', async (req, res) => {
   try {
+      // Validación básica de administrador
+      const isAdmin = req.body.isAdmin === 'true' || req.headers['x-admin-mode'] === 'true';
+      
+      if (!isAdmin) {
+          return res.status(403).render('realTimeProducts', { 
+              title: 'Productos en Tiempo Real',
+              products: await productManager.getProducts(),
+              error: 'Solo los administradores pueden eliminar productos'
+          });
+      }
+
       const productId = req.params.pid;
       await productManager.deleteProductById(productId);
       
