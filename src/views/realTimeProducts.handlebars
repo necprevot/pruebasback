@@ -1,335 +1,114 @@
-<div class="row">
-    <div class="col-12">
-        <h1 class="mb-4">
-            <i class="fas fa-clock"></i> Productos en Tiempo Real
-        </h1>
-        
-        {{#if error}}
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle"></i> {{error}}
-            </div>
-        {{/if}}
+<h2>Productos en Tiempo Real</h2>
 
-        <!-- Formulario para agregar productos -->
-        <div class="product-form p-4 mb-4">
-            <h3 class="mb-3">
-                <i class="fas fa-plus"></i> Agregar Nuevo Producto
-            </h3>
-            
-            <form id="productForm">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="title" class="form-label">Título *</label>
-                            <input type="text" class="form-control" id="title" name="title" required>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="price" class="form-label">Precio *</label>
-                            <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" required>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="code" class="form-label">Código *</label>
-                            <input type="text" class="form-control" id="code" name="code" required>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="stock" class="form-label">Stock *</label>
-                            <input type="number" class="form-control" id="stock" name="stock" min="0" required>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="category" class="form-label">Categoría</label>
-                            <input type="text" class="form-control" id="category" name="category">
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="status" class="form-label">Estado</label>
-                            <select class="form-select" id="status" name="status">
-                                <option value="true">Disponible</option>
-                                <option value="false">No disponible</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="description" class="form-label">Descripción</label>
-                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="thumbnails" class="form-label">URLs de Imágenes (separadas por coma)</label>
-                    <input type="text" class="form-control" id="thumbnails" name="thumbnails" placeholder="https://ejemplo.com/imagen1.jpg, https://ejemplo.com/imagen2.jpg">
-                </div>
-                
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Agregar Producto
+{{#if success}}
+    <div style="color: green; margin-bottom: 10px;">
+        {{success}}
+    </div>
+{{/if}}
+
+{{#if error}}
+    <div style="color: red; margin-bottom: 10px;">
+        {{error}}
+    </div>
+{{/if}}
+
+<h3>Agregar Nuevo Producto</h3>
+<form action="/api/products" method="POST">
+    <div>
+        <label for="title">Título:</label>
+        <input type="text" id="title" name="title" required>
+    </div>
+    
+    <div>
+        <label for="description">Descripción:</label>
+        <textarea id="description" name="description" required></textarea>
+    </div>
+    
+    <div>
+        <label for="price">Precio:</label>
+        <input type="number" id="price" name="price" min="0" step="1" required>
+    </div>
+    
+    <div>
+        <label for="status">Estado:</label>
+        <select id="status" name="status" required>
+            <option value="">Selecciona un estado</option>
+            <option value="true">Activo</option>
+            <option value="false">Inactivo</option>
+        </select>
+    </div>
+    
+    <div>
+        <label for="stock">Stock:</label>
+        <input type="number" id="stock" name="stock" min="0" required>
+    </div>
+    
+    <div>
+        <label for="category">Categoría:</label>
+        <input type="text" id="category" name="category" required>
+    </div>
+    
+    <div>
+        <label for="thumbnails">Imágenes (URLs separadas por comas):</label>
+        <input type="text" id="thumbnails" name="thumbnails" placeholder="https://ejemplo.com/img1.jpg, https://ejemplo.com/img2.jpg">
+    </div>
+    
+    <button type="submit">Agregar Producto</button>
+</form>
+
+<hr>
+
+<h3>Lista de Productos</h3>
+{{
+#if
+ products}}
+    <ul>
+        {{
+#each
+ products}}
+        <li>
+            <strong>{{this.title}}</strong> - ${{this.price}}
+            <br>
+            {{this.description}}
+            <br>
+            <small>
+                Stock: {{this.stock}} | 
+                Categoría: {{this.category}} | 
+                Estado: {{
+#if
+ this.status}}Activo{{else}}Inactivo{{
+/if
+}} | 
+                Código: {{this.code}}
+            </small>
+            {{
+#if
+ this.thumbnails}}
+                {{
+#if
+ this.thumbnails.length}}
+                    <br>
+                    <small>Imágenes: {{this.thumbnails.length}} archivo(s)</small>
+                {{
+/if
+}}
+            {{
+/if
+}}
+            <br>
+            <form action="/api/products/{{this.id}}" method="POST" style="display: inline; margin-top: 5px;">
+                <input type="hidden" name="_method" value="DELETE">
+                <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; cursor: pointer;" onclick="return confirm('¿Estás seguro de que quieres eliminar este producto?')">
+                    Eliminar
                 </button>
             </form>
-        </div>
-
-        <!-- Lista de productos -->
-        <div id="productsContainer">
-            {{#if hasProducts}}
-                <div class="products-grid">
-                    {{#each products}}
-                        <div class="card h-100" data-product-id="{{id}}">
-                            {{#if thumbnails.length}}
-                                <img src="{{thumbnails.0}}" class="card-img-top" alt="{{title}}" style="height: 200px; object-fit: cover;">
-                            {{else}}
-                                <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
-                                    <i class="fas fa-image fa-3x text-muted"></i>
-                                </div>
-                            {{/if}}
-                            
-                            <div class="card-body d-flex flex-column">
-                                <h5 class="card-title">{{title}}</h5>
-                                <p class="card-text">{{description}}</p>
-                                
-                                <div class="mt-auto">
-                                    <div class="row mb-2">
-                                        <div class="col-6">
-                                            <small class="text-muted">Precio:</small>
-                                            <div class="fw-bold text-success">${{price}}</div>
-                                        </div>
-                                        <div class="col-6">
-                                            <small class="text-muted">Stock:</small>
-                                            <div class="fw-bold">{{stock}}</div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="row mb-2">
-                                        <div class="col-6">
-                                            <small class="text-muted">Código:</small>
-                                            <div class="fw-bold">{{code}}</div>
-                                        </div>
-                                        <div class="col-6">
-                                            <small class="text-muted">Categoría:</small>
-                                            <div class="fw-bold">{{category}}</div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="row mb-3">
-                                        <div class="col-12">
-                                            <span class="badge {{#if status}}bg-success{{else}}bg-danger{{/if}}">
-                                                {{#if status}}Disponible{{else}}No disponible{{/if}}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    
-                                    <button class="btn btn-delete btn-sm w-100" onclick="deleteProduct({{id}})">
-                                        <i class="fas fa-trash"></i> Eliminar Producto
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    {{/each}}
-                </div>
-            {{else}}
-                <div class="text-center py-5" id="noProductsMessage">
-                    <i class="fas fa-box-open fa-5x text-muted mb-3"></i>
-                    <h3 class="text-muted">No hay productos disponibles</h3>
-                    <p class="text-muted">Usa el formulario de arriba para agregar productos.</p>
-                </div>
-            {{/if}}
-        </div>
-    </div>
-</div>
-
-<script>
-    // Conectar con Socket.io
-    const socket = io();
-    
-    // Manejar eventos de socket
-    socket.on('productAdded', (product) => {
-        addProductToGrid(product);
-        showToast('Producto agregado exitosamente', 'success');
-    });
-    
-    socket.on('productDeleted', (productId) => {
-        removeProductFromGrid(productId);
-        showToast('Producto eliminado exitosamente', 'success');
-    });
-    
-    socket.on('error', (error) => {
-        showToast(error, 'danger');
-    });
-    
-    // Manejar envío del formulario
-    document.getElementById('productForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const formData = new FormData(e.target);
-        const productData = {};
-        
-        // Convertir FormData a objeto
-        for (let [key, value] of formData.entries()) {
-            if (key === 'thumbnails' && value) {
-                productData[key] = value.split(',').map(url => url.trim()).filter(url => url);
-            } else if (key === 'price' || key === 'stock') {
-                productData[key] = parseFloat(value);
-            } else if (key === 'status') {
-                productData[key] = value === 'true';
-            } else {
-                productData[key] = value;
-            }
-        }
-        
-        try {
-            const response = await fetch('/api/products', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(productData)
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok) {
-                // Limpiar formulario
-                e.target.reset();
-                // Emitir evento via socket
-                socket.emit('productAdded', result.payload);
-            } else {
-                showToast(result.message || 'Error al agregar producto', 'danger');
-            }
-        } catch (error) {
-            showToast('Error de conexión', 'danger');
-        }
-    });
-    
-    // Función para eliminar producto
-    async function deleteProduct(productId) {
-        if (!confirm('¿Estás seguro de que quieres eliminar este producto?')) {
-            return;
-        }
-        
-        try {
-            const response = await fetch(`/api/products/${productId}`, {
-                method: 'DELETE'
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok) {
-                // Emitir evento via socket
-                socket.emit('productDeleted', productId);
-            } else {
-                showToast(result.message || 'Error al eliminar producto', 'danger');
-            }
-        } catch (error) {
-            showToast('Error de conexión', 'danger');
-        }
-    }
-    
-    // Función para agregar producto al grid
-    function addProductToGrid(product) {
-        const productsContainer = document.getElementById('productsContainer');
-        const noProductsMessage = document.getElementById('noProductsMessage');
-        
-        // Ocultar mensaje de "no hay productos"
-        if (noProductsMessage) {
-            noProductsMessage.style.display = 'none';
-        }
-        
-        // Crear o obtener el grid de productos
-        let productsGrid = productsContainer.querySelector('.products-grid');
-        if (!productsGrid) {
-            productsGrid = document.createElement('div');
-            productsGrid.className = 'products-grid';
-            productsContainer.appendChild(productsGrid);
-        }
-        
-        // Crear card del producto
-        const productCard = document.createElement('div');
-        productCard.className = 'card h-100';
-        productCard.setAttribute('data-product-id', product.id);
-        
-        const thumbnailHtml = product.thumbnails && product.thumbnails.length > 0
-            ? `<img src="${product.thumbnails[0]}" class="card-img-top" alt="${product.title}" style="height: 200px; object-fit: cover;">`
-            : `<div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
-                <i class="fas fa-image fa-3x text-muted"></i>
-               </div>`;
-        
-        productCard.innerHTML = `
-            ${thumbnailHtml}
-            <div class="card-body d-flex flex-column">
-                <h5 class="card-title">${product.title}</h5>
-                <p class="card-text">${product.description || ''}</p>
-                
-                <div class="mt-auto">
-                    <div class="row mb-2">
-                        <div class="col-6">
-                            <small class="text-muted">Precio:</small>
-                            <div class="fw-bold text-success">${product.price}</div>
-                        </div>
-                        <div class="col-6">
-                            <small class="text-muted">Stock:</small>
-                            <div class="fw-bold">${product.stock}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-2">
-                        <div class="col-6">
-                            <small class="text-muted">Código:</small>
-                            <div class="fw-bold">${product.code}</div>
-                        </div>
-                        <div class="col-6">
-                            <small class="text-muted">Categoría:</small>
-                            <div class="fw-bold">${product.category || ''}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <span class="badge ${product.status ? 'bg-success' : 'bg-danger'}">
-                                ${product.status ? 'Disponible' : 'No disponible'}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <button class="btn btn-delete btn-sm w-100" onclick="deleteProduct(${product.id})">
-                        <i class="fas fa-trash"></i> Eliminar Producto
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        productsGrid.appendChild(productCard);
-    }
-    
-    // Función para remover producto del grid
-    function removeProductFromGrid(productId) {
-        const productCard = document.querySelector(`[data-product-id="${productId}"]`);
-        if (productCard) {
-            productCard.remove();
-        }
-        
-        // Verificar si no hay más productos
-        const productsGrid = document.querySelector('.products-grid');
-        if (productsGrid && productsGrid.children.length === 0) {
-            const productsContainer = document.getElementById('productsContainer');
-            productsContainer.innerHTML = `
-                <div class="text-center py-5" id="noProductsMessage">
-                    <i class="fas fa-box-open fa-5x text-muted mb-3"></i>
-                    <h3 class="text-muted">No hay productos disponibles</h3>
-                    <p class="text-muted">Usa el formulario de arriba para agregar productos.</p>
-                </div>
-            `;
-        }
-    }
-</script>
+        </li>
+        {{
+/each
+}}
+    </ul>
+{{else}}
+    <p>No hay productos disponibles.</p>
+{{
+/if
+}}

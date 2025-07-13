@@ -1,1 +1,68 @@
-[]
+[
+  {
+    "id": 2,
+    "title": "Chucrut",
+    "description": "El clásico fermentado de repollo, rico en probióticos y con un sabor intenso y ligeramente ácido. Perfecto para acompañar carnes, ensaladas o simplemente disfrutar solo. Elaborado con ingredientes naturales y sin conservantes",
+    "price": 5000,
+    "status": true,
+    "stock": 250,
+    "category": "ofertas",
+    "thumbnails": [],
+    "code": "1278444621654"
+  },
+  {
+    "id": 3,
+    "title": "Cerezas al Vinagre",
+    "description": "Un equilibrio perfecto entre dulzura y acidez. Nuestras cerezas al vinagre son una explosión de sabor en cada bocado, ideales para acompañar quesos, ensaladas o carnes. Fermentadas de manera artesanal, conservan su textura y propiedades naturales.",
+    "price": 1000,
+    "status": true,
+    "stock": 200,
+    "category": "nuevos",
+    "thumbnails": [],
+    "code": "1786689265383"
+  },
+  {
+    "id": 4,
+    "title": "Chucrut prueba 2",
+    "description": "El clásico fermentado de repollo, rico en probióticos y con un sabor intenso y ligeramente ácido. Perfecto para acompañar carnes, ensaladas o simplemente disfrutar solo. Elaborado con ingredientes naturales y sin conservantes",
+    "price": "6000",
+    "status": "true",
+    "stock": "350",
+    "category": "nuevos",
+    "thumbnails": [],
+    "code": "7695759309284"
+  },
+  {
+    "id": 5,
+    "title": "Cerezas al Vinagre prueba 2",
+    "description": "Un equilibrio perfecto entre dulzura y acidez. Nuestras cerezas al vinagre son una explosión de sabor en cada bocado, ideales para acompañar quesos, ensaladas o carnes. Fermentadas de manera artesanal, conservan su textura y propiedades naturales.",
+    "price": 2000,
+    "status": true,
+    "stock": 400,
+    "category": "pruebas",
+    "thumbnails": [],
+    "code": "0852619132911"
+  },
+  {
+    "id": 6,
+    "title": "de",
+    "description": "ew",
+    "price": 5000,
+    "status": true,
+    "stock": 32424,
+    "category": "dasd",
+    "thumbnails": [],
+    "code": "3977155081612"
+  },
+  {
+    "id": 7,
+    "title": "de",
+    "description": "ew",
+    "price": 5000,
+    "status": true,
+    "stock": 32424,
+    "category": "dasd",
+    "thumbnails": [],
+    "code": "8711505155665"
+  }
+]

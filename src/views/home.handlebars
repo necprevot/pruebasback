@@ -1,75 +1,17 @@
-<div class="row">
-    <div class="col-12">
-        <h1 class="mb-4">
-            <i class="fas fa-box"></i> Todos los Productos
-        </h1>
-        
-        {{#if error}}
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle"></i> {{error}}
-            </div>
-        {{/if}}
+<h2>Lista de Productos</h2>
 
-        {{#if hasProducts}}
-            <div class="products-grid">
-                {{#each products}}
-                    <div class="card h-100">
-                        {{#if thumbnails.length}}
-                            <img src="{{thumbnails.0}}" class="card-img-top" alt="{{title}}" style="height: 200px; object-fit: cover;">
-                        {{else}}
-                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
-                                <i class="fas fa-image fa-3x text-muted"></i>
-                            </div>
-                        {{/if}}
-                        
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">{{title}}</h5>
-                            <p class="card-text">{{description}}</p>
-                            
-                            <div class="mt-auto">
-                                <div class="row mb-2">
-                                    <div class="col-6">
-                                        <small class="text-muted">Precio:</small>
-                                        <div class="fw-bold text-success">${{price}}</div>
-                                    </div>
-                                    <div class="col-6">
-                                        <small class="text-muted">Stock:</small>
-                                        <div class="fw-bold">{{stock}}</div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row mb-2">
-                                    <div class="col-6">
-                                        <small class="text-muted">Código:</small>
-                                        <div class="fw-bold">{{code}}</div>
-                                    </div>
-                                    <div class="col-6">
-                                        <small class="text-muted">Categoría:</small>
-                                        <div class="fw-bold">{{category}}</div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-12">
-                                        <span class="badge {{#if status}}bg-success{{else}}bg-danger{{/if}}">
-                                            {{#if status}}Disponible{{else}}No disponible{{/if}}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                {{/each}}
-            </div>
-        {{else}}
-            <div class="text-center py-5">
-                <i class="fas fa-box-open fa-5x text-muted mb-3"></i>
-                <h3 class="text-muted">No hay productos disponibles</h3>
-                <p class="text-muted">Aún no se han agregado productos a la tienda.</p>
-                <a href="/realtimeproducts" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Agregar Productos
-                </a>
-            </div>
-        {{/if}}
-    </div>
-</div>
+{{#if products}}
+    <ul>
+        {{#each products}}
+        <li>
+            <strong>{{this.title}}</strong> - ${{this.price}}
+            <br>
+            {{this.description}}
+            <br>
+            <small>Stock: {{this.stock}} | Categoría: {{this.category}} | Código: {{this.code}}</small>
+        </li>
+        {{/each}}
+    </ul>
+{{else}}
+    <p>No hay productos disponibles.</p>
+{{/if}}

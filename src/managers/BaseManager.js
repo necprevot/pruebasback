@@ -1,78 +1,121 @@
-// src/managers/BaseManager.js
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
-export class BaseManager {
-    constructor(filePath) {
-        this.path = filePath;
-        this.ensureFileExists();
+class BaseManager {
+    constructor(fileName) {
+        // Construye la ruta completa hacia el archivo en src/data/
+        this.pathFile = path.join(process.cwd(), 'src', 'data', fileName);
     }
 
-    ensureFileExists() {
-        if (!fs.existsSync(this.path)) {
-            const dir = path.dirname(this.path);
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
-            }
-            fs.writeFileSync(this.path, JSON.stringify([], null, 2));
+    // Generador de ID genérico
+    generateNewId(items) {
+        if (items.length > 0) {
+            return items[items.length - 1].id + 1;
+        } else {
+            return 1;
         }
     }
 
-    async readFile() {
+    // Leer datos del archivo
+    async readData() {
         try {
-            const data = await fs.promises.readFile(this.path, 'utf-8');
-            return JSON.parse(data);
+            const fileData = await fs.promises.readFile(this.pathFile, "utf-8");
+            return JSON.parse(fileData);
         } catch (error) {
-            console.error(`Error reading file ${this.path}:`, error);
+            // Si el archivo no existe, retorna array vacío
             return [];
         }
     }
 
-    async writeFile(data) {
+    // Escribir datos al archivo
+    async writeData(data) {
         try {
-            await fs.promises.writeFile(this.path, JSON.stringify(data, null, 2));
+            await fs.promises.writeFile(this.pathFile, JSON.stringify(data, null, 2), "utf-8");
+            return data;
         } catch (error) {
-            console.error(`Error writing file ${this.path}:`, error);
-            throw error;
+            throw new Error(`Error al escribir en el archivo: ${error.message}`);
         }
     }
 
-    async getAll() {
-        return await this.readFile();
-    }
-
+    // Buscar item por ID
     async getById(id) {
-        const items = await this.readFile();
-        return items.find(item => item.id === parseInt(id));
+        try {
+            const data = await this.readData();
+            const item = data.find(item => item.id === parseInt(id));
+            
+            if (!item) {
+                throw new Error(`Item con id: ${id} no encontrado`);
+            }
+            
+            return item;
+        } catch (error) {
+            throw new Error(`Error al obtener el item: ${error.message}`);
+        }
     }
 
-    async create(itemData) {
-        const items = await this.readFile();
-        const newId = items.length > 0 ? Math.max(...items.map(item => item.id)) + 1 : 1;
-        const newItem = { id: newId, ...itemData };
-        items.push(newItem);
-        await this.writeFile(items);
-        return newItem;
+    // Obtener todos los items
+    async getAll() {
+        try {
+            return await this.readData();
+        } catch (error) {
+            throw new Error("Error al cargar los datos");
+        }
     }
 
-    async update(id, updateData) {
-        const items = await this.readFile();
-        const index = items.findIndex(item => item.id === parseInt(id));
-        if (index === -1) return null;
-        
-        items[index] = { ...items[index], ...updateData };
-        await this.writeFile(items);
-        return items[index];
+    // Eliminar item por ID
+    async deleteById(id) {
+        try {
+            const data = await this.readData();
+            const itemIndex = data.findIndex(item => item.id === parseInt(id));
+
+            if (itemIndex === -1) {
+                throw new Error(`Item con id: ${id} no encontrado`);
+            }
+            
+            data.splice(itemIndex, 1);
+            await this.writeData(data);
+            return data;
+        } catch (error) {
+            throw new Error(`Error al eliminar el item: ${error.message}`);
+        }
     }
 
-    async delete(id) {
-        const items = await this.readFile();
-        const index = items.findIndex(item => item.id === parseInt(id));
-        if (index === -1) return null;
-        
-        const deletedItem = items[index];
-        items.splice(index, 1);
-        await this.writeFile(items);
-        return deletedItem;
+    // Actualizar item por ID
+    async updateById(id, updatedItem) {
+        try {
+            const data = await this.readData();
+            const itemIndex = data.findIndex(item => item.id === parseInt(id));
+            
+            if (itemIndex === -1) {
+                throw new Error(`Item con id: ${id} no encontrado`);
+            }
+
+            data[itemIndex] = { ...data[itemIndex], ...updatedItem };
+            await this.writeData(data);
+            return data;
+        } catch (error) {
+            throw new Error(`Error al actualizar el item: ${error.message}`);
+        }
+    }
+
+    // Agregar nuevo item
+    async add(newItem) {
+        try {
+            const data = await this.readData();
+            const newId = this.generateNewId(data);
+            
+            const item = {
+                id: newId,
+                ...newItem
+            };
+            
+            data.push(item);
+            await this.writeData(data);
+            return item;
+        } catch (error) {
+            throw new Error(`Error al agregar el nuevo item: ${error.message}`);
+        }
     }
 }
+
+export default BaseManager;
