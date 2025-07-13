@@ -42,10 +42,10 @@ router.get("/:pid", async (req, res) => {
     }
 });
 
-//Agregar nuevo producto - EMITE WEBSOCKET - CON VALIDACIÓN ADMIN
+
 router.post('/', async (req, res) => {
   try {
-      // Validación básica de administrador (mejorar en el futuro)
+
       const isAdmin = req.body.isAdmin === 'true' || req.headers['x-admin-mode'] === 'true';
       
       if (!isAdmin) {
@@ -78,7 +78,7 @@ router.post('/', async (req, res) => {
       
       const addedProduct = await productManager.addProduct(newProduct);
       
-      // EMITIR WEBSOCKET - Actualizar lista en tiempo real
+
       const io = req.app.get('io');
       const products = await productManager.getProducts();
       io.emit('updateProducts', products);
@@ -91,7 +91,7 @@ router.post('/', async (req, res) => {
       });
       
   } catch (error) {
-      // En caso de error, mostrar la vista con mensaje de error
+
       const products = await productManager.getProducts();
       res.render('realTimeProducts', { 
           title: 'Productos en Tiempo Real',
@@ -126,10 +126,10 @@ router.put("/:pid", async (req, res) => {
     }
 });
 
-// Eliminar producto usando POST - EMITE WEBSOCKET - CON VALIDACIÓN ADMIN
+
 router.post('/:pid/delete', async (req, res) => {
   try {
-      // Validación básica de administrador
+
       const isAdmin = req.body.isAdmin === 'true' || req.headers['x-admin-mode'] === 'true';
       
       if (!isAdmin) {
@@ -143,12 +143,11 @@ router.post('/:pid/delete', async (req, res) => {
       const productId = req.params.pid;
       await productManager.deleteProductById(productId);
       
-      // EMITIR WEBSOCKET - Actualizar lista en tiempo real
+
       const io = req.app.get('io');
       const products = await productManager.getProducts();
       io.emit('updateProducts', products);
       
-      // Obtener la lista actualizada y renderizar la vista
       res.render('realTimeProducts', { 
           title: 'Productos en Tiempo Real',
           products: products,
@@ -156,7 +155,7 @@ router.post('/:pid/delete', async (req, res) => {
       });
       
   } catch (error) {
-      // En caso de error, mostrar la vista con mensaje de error
+
       const products = await productManager.getProducts();
       res.render('realTimeProducts', { 
           title: 'Productos en Tiempo Real',
@@ -166,7 +165,7 @@ router.post('/:pid/delete', async (req, res) => {
   }
 });
 
-// Ruta DELETE para APIs externas - EMITE WEBSOCKET
+
 router.delete('/:pid', async (req, res) => {
   try {
       const productId = req.params.pid;

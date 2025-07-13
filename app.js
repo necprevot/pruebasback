@@ -31,13 +31,12 @@ app.engine('handlebars', engine({
 app.set('view engine', 'handlebars');
 app.set('views', path.join(process.cwd(), 'src/views'));
 
-// Hacer io accesible en las rutas
 app.set('io', io);
 
 // Configurar rutas
-app.use('/', viewsRouter);                    // Rutas de vistas (home, realtimeproducts)
-app.use('/api/products', productsRouter);     // Rutas de productos
-app.use('/api/carts', cartsRouter);           // Rutas de carritos
+app.use('/', viewsRouter);                    
+app.use('/api/products', productsRouter);     
+app.use('/api/carts', cartsRouter);           
 
 // CONFIGURACIÓN DE WEBSOCKETS
 const productManager = new ProductManager();
@@ -50,12 +49,10 @@ io.on('connection', (socket) => {
         socket.emit('updateProducts', products);
     });
     
-    // Escuchar cuando un cliente se desconecte
     socket.on('disconnect', () => {
         console.log('Usuario desconectado:', socket.id);
     });
     
-    // Escuchar eventos desde el cliente
     socket.on('addProduct', async (productData) => {
         try {
             const newProduct = await productManager.addProduct(productData);
@@ -80,9 +77,4 @@ io.on('connection', (socket) => {
 // Iniciar servidor
 httpServer.listen(8080, () => {
     console.log(`Servidor con WebSockets iniciado en puerto 8080`);
-    console.log('Rutas configuradas:');
-    console.log('- / (Home)');
-    console.log('- /realtimeproducts (Productos en tiempo real)');
-    console.log('- /api/products (API de productos)');
-    console.log('- /api/carts (API de carritos)');
 });

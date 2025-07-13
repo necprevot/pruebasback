@@ -82,8 +82,8 @@
 </div>
 
 <h3>Lista de Productos</h3>
+<!-- Mostrar productos -->
 <div id="productsList">
-    <!-- Los productos se cargarán aquí dinámicamente -->
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -97,7 +97,7 @@
     const adminSection = document.getElementById('adminSection');
     const nonAdminMessage = document.getElementById('nonAdminMessage');
 
-    // Variable para controlar el modo administrador
+// Interruptor 
     let isAdmin = false;
 
     // Manejo del interruptor de administrador
@@ -123,14 +123,12 @@
             nonAdminMessage.style.display = 'block';
         }
         
-        // Re-renderizar productos para mostrar/ocultar botones de eliminar
         const currentProducts = JSON.parse(sessionStorage.getItem('currentProducts') || '[]');
         if (currentProducts.length > 0) {
             renderProducts(currentProducts);
         }
     }
 
-    // Manejo de conexión
     socket.on('connect', () => {
         console.log('Conectado al servidor');
         connectionStatus.textContent = 'Conectado ✓';
@@ -143,7 +141,6 @@
         connectionStatus.style.color = 'red';
     });
 
-    // Recibir productos actualizados
     socket.on('updateProducts', (products) => {
         console.log('Productos actualizados:', products);
         // Guardar productos en sessionStorage para re-renderizar cuando cambie el modo admin
@@ -151,7 +148,6 @@
         renderProducts(products);
     });
 
-    // Función para renderizar productos
     function renderProducts(products) {
         if (!products || products.length === 0) {
             productsList.innerHTML = '<div class="alert alert-danger"><p>No hay productos disponibles.</p></div>';
@@ -240,6 +236,5 @@
         alert('Error: ' + error.message);
     });
 
-    // Inicializar interfaz
     updateAdminInterface();
 </script>

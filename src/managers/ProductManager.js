@@ -2,7 +2,6 @@ import BaseManager from "./BaseManager.js";
 
 class ProductManager extends BaseManager {
     constructor() {
-        // Solo pasa el nombre del archivo, BaseManager construye la ruta completa
         super('products.json');
     }
 

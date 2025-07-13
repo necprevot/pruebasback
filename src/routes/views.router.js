@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Ruta para realTimeProducts.handlebars - CON WEBSOCKETS
+// Ruta para realTimeProducts.handlebars
 router.get('/realtimeproducts', async (req, res) => {
   try {
       const products = await productManager.getProducts();

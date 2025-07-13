@@ -352,7 +352,6 @@ footer {
     margin-top: 1rem;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .container {
         padding: 10px;

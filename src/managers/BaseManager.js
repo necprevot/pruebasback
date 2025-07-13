@@ -3,7 +3,7 @@ import path from "path";
 
 class BaseManager {
     constructor(fileName) {
-        // Construye la ruta completa hacia el archivo en src/data/
+
         this.pathFile = path.join(process.cwd(), 'src', 'data', fileName);
     }
 
