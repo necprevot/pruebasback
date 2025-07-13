@@ -47,9 +47,12 @@ router.post('/', async (req, res) => {
   try {
       const { title, description, price, status, stock, category, thumbnails } = req.body;
       
-      // Procesar thumbnails (convertir string separado por comas a array)
+      // Procesar thumbnails (convertir nombres de archivo a rutas completas)
       const thumbnailsArray = thumbnails ? 
-          thumbnails.split(',').map(url => url.trim()).filter(url => url) : 
+          thumbnails.split(',')
+              .map(filename => filename.trim())
+              .filter(filename => filename)
+              .map(filename => `/img/${filename}`) : 
           [];
       
       const newProduct = {

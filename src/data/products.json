@@ -1,35 +1,41 @@
 [
   {
-    "id": 2,
-    "title": "Chucrut",
-    "description": "El clásico fermentado de repollo, rico en probióticos y con un sabor intenso y ligeramente ácido. Perfecto para acompañar carnes, ensaladas o simplemente disfrutar solo. Elaborado con ingredientes naturales y sin conservantes",
-    "price": 5000,
+    "id": 4,
+    "title": "Kimchi",
+    "description": "Auténtico kimchi de receta tradicional, con el nivel justo de picante y fermentado para potenciar su sabor umami. Una opción deliciosa y saludable, ideal para acompañar arroz, sopas o disfrutar como snack.",
+    "price": 2312,
     "status": true,
-    "stock": 250,
-    "category": "ofertas",
-    "thumbnails": [],
-    "code": "1278444621654"
+    "stock": 32321,
+    "category": "mas vendidos",
+    "thumbnails": [
+      "/img/kimchi.png"
+    ],
+    "code": "0163304332410"
   },
   {
-    "id": 3,
+    "id": 5,
+    "title": "Chucrut",
+    "description": "El clásico fermentado de repollo, rico en probióticos y con un sabor intenso y ligeramente ácido. Perfecto para acompañar carnes, ensaladas o simplemente disfrutar solo. Elaborado con ingredientes naturales y sin conservantes",
+    "price": 2000,
+    "status": true,
+    "stock": 232,
+    "category": "nuevo",
+    "thumbnails": [
+      "/img/chucrut.png"
+    ],
+    "code": "4940011444625"
+  },
+  {
+    "id": 6,
     "title": "Cerezas al Vinagre",
     "description": "Un equilibrio perfecto entre dulzura y acidez. Nuestras cerezas al vinagre son una explosión de sabor en cada bocado, ideales para acompañar quesos, ensaladas o carnes. Fermentadas de manera artesanal, conservan su textura y propiedades naturales.",
     "price": 1000,
     "status": true,
-    "stock": 200,
-    "category": "nuevos",
-    "thumbnails": [],
-    "code": "1786689265383"
-  },
-  {
-    "id": 4,
-    "title": "Kimchi",
-    "description": "Auténtico kimchi de receta tradicional, con el nivel justo de picante y fermentado para potenciar su sabor umami. Una opción deliciosa y saludable, ideal para acompañar arroz, sopas o disfrutar como snack.\"",
-    "price": 2500,
-    "status": true,
-    "stock": 21323,
-    "category": "mas vendidos",
-    "thumbnails": [],
-    "code": "2560209308941"
+    "stock": 1000,
+    "category": "ofertas",
+    "thumbnails": [
+      "/img/cerezas.png"
+    ],
+    "code": "6400676809966"
   }
 ]

@@ -1,39 +1,39 @@
 <h2>Productos en Tiempo Real</h2>
 
-<div id="status" style="margin-bottom: 10px;">
+<div id="status" class="mb-3">
     <span id="connectionStatus" style="color: orange;">Conectando...</span>
 </div>
 
 {{#if success}}
-    <div style="color: green; margin-bottom: 10px;">
+    <div class="alert alert-success">
         {{success}}
     </div>
 {{/if}}
 
 {{#if error}}
-    <div style="color: red; margin-bottom: 10px;">
+    <div class="alert alert-danger">
         {{error}}
     </div>
 {{/if}}
 
 <h3>Agregar Nuevo Producto</h3>
 <form id="productForm">
-    <div>
+    <div class="form-group">
         <label for="title">Título:</label>
         <input type="text" id="title" name="title" required>
     </div>
     
-    <div>
+    <div class="form-group">
         <label for="description">Descripción:</label>
         <textarea id="description" name="description" required></textarea>
     </div>
     
-    <div>
+    <div class="form-group">
         <label for="price">Precio:</label>
         <input type="number" id="price" name="price" min="0" step="1" required>
     </div>
     
-    <div>
+    <div class="form-group">
         <label for="status">Estado:</label>
         <select id="status" name="status" required>
             <option value="">Selecciona un estado</option>
@@ -42,22 +42,23 @@
         </select>
     </div>
     
-    <div>
+    <div class="form-group">
         <label for="stock">Stock:</label>
         <input type="number" id="stock" name="stock" min="0" required>
     </div>
     
-    <div>
+    <div class="form-group">
         <label for="category">Categoría:</label>
         <input type="text" id="category" name="category" required>
     </div>
     
-    <div>
-        <label for="thumbnails">Imágenes (URLs separadas por comas):</label>
-        <input type="text" id="thumbnails" name="thumbnails" placeholder="https://ejemplo.com/img1.jpg, https://ejemplo.com/img2.jpg">
+    <div class="form-group">
+        <label for="thumbnails">Imágenes (nombres de archivo separados por comas):</label>
+        <input type="text" id="thumbnails" name="thumbnails" placeholder="cerezas.png, chucrut.jpg">
+        <small>Solo ingresa el nombre del archivo. Las imágenes deben estar en public/img/</small>
     </div>
     
-    <button type="submit">Agregar Producto</button>
+    <button type="submit" class="btn-primary">Agregar Producto</button>
 </form>
 
 <hr>
@@ -101,8 +102,8 @@
         }
 
         const productsHTML = products.map(product => `
-            <div style="border: 1px solid #ccc; margin: 10px 0; padding: 10px;">
-                <h4>${product.title} - $${product.price}</h4>
+            <div style="border: 1px solid #ccc; margin: 10px 0; padding: 10px; border-radius: 5px;">
+                <h4>${product.title} - ${product.price}</h4>
                 <p>${product.description}</p>
                 <small>
                     Stock: ${product.stock} | 
@@ -111,7 +112,11 @@
                     Código: ${product.code}
                 </small>
                 ${product.thumbnails && product.thumbnails.length > 0 ? 
-                    `<br><small>Imágenes: ${product.thumbnails.length} archivo(s)</small>` : ''}
+                    `<br><div style="margin: 10px 0;">
+                        ${product.thumbnails.map(img => 
+                            `<img src="${img}" alt="${product.title}" style="width: 80px; height: 80px; object-fit: cover; margin: 5px; border: 1px solid #ddd; border-radius: 3px;" onerror="this.style.display='none';">`
+                        ).join('')}
+                    </div>` : ''}
                 <br>
                 <button onclick="deleteProduct(${product.id})" 
                         style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; cursor: pointer; margin-top: 5px;">
@@ -124,7 +129,7 @@
     }
 
     // Función para eliminar producto
-    function deleteProduct(productId) {
+    window.deleteProduct = function(productId) {
         if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
             socket.emit('deleteProduct', productId);
         }
@@ -137,6 +142,14 @@
         const formData = new FormData(productForm);
         const thumbnails = formData.get('thumbnails');
         
+        // Procesar thumbnails para convertir nombres de archivo a rutas
+        const thumbnailsArray = thumbnails ? 
+            thumbnails.split(',')
+                .map(filename => filename.trim())
+                .filter(filename => filename)
+                .map(filename => `/img/${filename}`) : 
+            [];
+        
         const productData = {
             title: formData.get('title'),
             description: formData.get('description'),
@@ -144,7 +157,7 @@
             status: formData.get('status') === 'true',
             stock: parseInt(formData.get('stock')),
             category: formData.get('category'),
-            thumbnails: thumbnails ? thumbnails.split(',').map(url => url.trim()).filter(url => url) : []
+            thumbnails: thumbnailsArray
         };
 
         socket.emit('addProduct', productData);
