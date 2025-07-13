@@ -1,0 +1,169 @@
+import { Router } from 'express';
+import ProductManager from '../managers/ProductManager.js';
+
+const router = Router();
+const productManager = new ProductManager();
+
+//Mostrar todos los productos
+router.get("/", async (req, res) => {
+    try {
+        const products = await productManager.getProducts();
+        res.json({ status: "success", products });
+    } catch (error) {
+        res.status(500).json({ 
+            status: "error", 
+            message: "Error al obtener los productos", 
+            error: error.message 
+        });
+    }
+});
+
+//Mostrar el producto por ID
+router.get("/:pid", async (req, res) => {
+    try {
+        const { pid } = req.params;
+        const products = await productManager.getProducts();
+        const product = products.find(p => p.id === parseInt(pid));
+        
+        if (!product) {
+            return res.status(404).json({ 
+                status: "error", 
+                message: `Producto con id: ${pid} no encontrado` 
+            });
+        }
+        
+        res.json({ status: "success", product });
+    } catch (error) {
+        res.status(500).json({ 
+            status: "error", 
+            message: "Error al obtener el producto", 
+            error: error.message 
+        });
+    }
+});
+
+//Agregar nuevo producto - EMITE WEBSOCKET
+router.post('/', async (req, res) => {
+  try {
+      const { title, description, price, status, stock, category, thumbnails } = req.body;
+      
+      // Procesar thumbnails (convertir string separado por comas a array)
+      const thumbnailsArray = thumbnails ? 
+          thumbnails.split(',').map(url => url.trim()).filter(url => url) : 
+          [];
+      
+      const newProduct = {
+          title,
+          description,
+          price: parseInt(price),
+          status: status === 'true',
+          stock: parseInt(stock),
+          category,
+          thumbnails: thumbnailsArray
+      };
+      
+      const addedProduct = await productManager.addProduct(newProduct);
+      
+      // EMITIR WEBSOCKET - Actualizar lista en tiempo real
+      const io = req.app.get('io');
+      const products = await productManager.getProducts();
+      io.emit('updateProducts', products);
+      
+      // Obtener la lista actualizada y renderizar la misma vista
+      res.render('realTimeProducts', { 
+          title: 'Productos en Tiempo Real',
+          products: products,
+          success: 'Producto agregado exitosamente'
+      });
+      
+  } catch (error) {
+      // En caso de error, mostrar la vista con mensaje de error
+      const products = await productManager.getProducts();
+      res.render('realTimeProducts', { 
+          title: 'Productos en Tiempo Real',
+          products: products,
+          error: `Error al agregar producto: ${error.message}`
+      });
+  }
+});
+
+//Actualizar producto
+router.put("/:pid", async (req, res) => {
+    try {
+        const { pid } = req.params;
+        const updatedData = req.body;
+        
+        // Actualiza todo menos el ID y Code
+        if (updatedData.id) {
+            delete updatedData.id;
+        }
+        if (updatedData.code) {
+            delete updatedData.code;
+        }
+        
+        const products = await productManager.updateProductById(pid, updatedData);
+        res.json({ status: "success", products });
+    } catch (error) {
+        res.status(500).json({ 
+            status: "error", 
+            message: "Error al actualizar el producto", 
+            error: error.message 
+        });
+    }
+});
+
+// Eliminar producto usando POST - EMITE WEBSOCKET
+router.post('/:pid/delete', async (req, res) => {
+  try {
+      const productId = req.params.pid;
+      await productManager.deleteProductById(productId);
+      
+      // EMITIR WEBSOCKET - Actualizar lista en tiempo real
+      const io = req.app.get('io');
+      const products = await productManager.getProducts();
+      io.emit('updateProducts', products);
+      
+      // Obtener la lista actualizada y renderizar la vista
+      res.render('realTimeProducts', { 
+          title: 'Productos en Tiempo Real',
+          products: products,
+          success: 'Producto eliminado exitosamente'
+      });
+      
+  } catch (error) {
+      // En caso de error, mostrar la vista con mensaje de error
+      const products = await productManager.getProducts();
+      res.render('realTimeProducts', { 
+          title: 'Productos en Tiempo Real',
+          products: products,
+          error: `Error al eliminar producto: ${error.message}`
+      });
+  }
+});
+
+// Ruta DELETE para APIs externas - EMITE WEBSOCKET
+router.delete('/:pid', async (req, res) => {
+  try {
+      const productId = req.params.pid;
+      await productManager.deleteProductById(productId);
+      
+      // EMITIR WEBSOCKET - Actualizar lista en tiempo real
+      const io = req.app.get('io');
+      const products = await productManager.getProducts();
+      io.emit('updateProducts', products);
+      
+      res.json({
+          status: "success",
+          message: "Producto eliminado exitosamente"
+      });
+      
+  } catch (error) {
+      res.status(500).json({ 
+          status: "error", 
+          message: "Error al eliminar el producto", 
+          error: error.message 
+      });
+  }
+});
+
+export default router;

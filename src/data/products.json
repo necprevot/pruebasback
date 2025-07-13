@@ -23,13 +23,13 @@
   },
   {
     "id": 4,
-    "title": "sdsadas",
-    "description": "dsads",
-    "price": 34234,
+    "title": "Kimchi",
+    "description": "Auténtico kimchi de receta tradicional, con el nivel justo de picante y fermentado para potenciar su sabor umami. Una opción deliciosa y saludable, ideal para acompañar arroz, sopas o disfrutar como snack.\"",
+    "price": 2500,
     "status": true,
-    "stock": 232342,
-    "category": "dsadsad",
+    "stock": 21323,
+    "category": "mas vendidos",
     "thumbnails": [],
-    "code": "0540912484630"
+    "code": "2560209308941"
   }
 ]
