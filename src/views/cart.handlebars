@@ -1,0 +1,278 @@
+<div class="cart-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--border-color);">
+    <h2>🛒 Carrito: {{cartId}}</h2>
+    <div class="cart-actions">
+        <a href="/" class="btn-secondary" style="text-decoration: none; margin-right: 10px;">← Seguir Comprando</a>
+        {{#if hasProducts}}
+            <button onclick="clearCart()" class="btn-danger">Vaciar Carrito</button>
+        {{/if}}
+    </div>
+</div>
+
+<!-- Alertas -->
+<div id="alertContainer"></div>
+
+{{#if error}}
+    <div class="alert alert-danger">
+        <strong>Error:</strong> {{error}}
+    </div>
+{{/if}}
+
+{{#if hasProducts}}
+    <!-- Productos en el carrito -->
+    <div id="cartProducts">
+        {{#each cart.products}}
+            <div class="cart-product-item" data-product-id="{{this.product._id}}">
+                <div class="cart-product-card">
+                    <div class="cart-product-info">
+                        <div class="cart-product-image">
+                            {{#if this.product.thumbnails}}
+                                {{#if this.product.thumbnails.0}}
+                                    <img src="{{this.product.thumbnails.0}}" 
+                                         alt="{{this.product.title}}" 
+                                         class="product-image-small" 
+                                         onerror="this.style.display='none';">
+                                {{else}}
+                                    <div class="no-image">📦</div>
+                                {{/if}}
+                            {{else}}
+                                <div class="no-image">📦</div>
+                            {{/if}}
+                        </div>
+                        
+                        <div class="cart-product-details">
+                            <h4 class="cart-product-title">{{this.product.title}}</h4>
+                            <p class="cart-product-description">{{this.product.description}}</p>
+                            <div class="cart-product-meta">
+                                <span class="product-price">${{this.product.price}} c/u</span>
+                                <span class="product-category">{{this.product.category}}</span>
+                                <span class="product-code">Código: {{this.product.code}}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="cart-product-actions">
+                        <div class="quantity-controls">
+                            <label>Cantidad:</label>
+                            <div class="quantity-input-group">
+                                <button onclick="updateQuantity('{{this.product._id}}', {{this.quantity}} - 1)" class="btn-quantity">-</button>
+                                <input type="number" 
+                                       id="quantity-{{this.product._id}}" 
+                                       value="{{this.quantity}}" 
+                                       min="1" 
+                                       max="{{this.product.stock}}"
+                                       onchange="updateQuantity('{{this.product._id}}', this.value)"
+                                       class="quantity-input">
+                                <button onclick="updateQuantity('{{this.product._id}}', {{this.quantity}} + 1)" class="btn-quantity">+</button>
+                            </div>
+                            <small class="stock-info">Stock disponible: {{this.product.stock}}</small>
+                        </div>
+                        
+                        <div class="subtotal-section">
+                            <div class="subtotal">
+                                <strong>Subtotal: $<span id="subtotal-{{this.product._id}}">{{multiply this.product.price this.quantity}}</span></strong>
+                            </div>
+                            <button onclick="removeFromCart('{{this.product._id}}')" class="btn-danger remove-product-btn">
+                                🗑️ Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {{/each}}
+    </div>
+    
+    <!-- Resumen del carrito -->
+    <div class="cart-summary">
+        <div class="summary-content">
+            <div class="summary-row">
+                <span>Total de productos:</span>
+                <span id="totalItems">{{getTotalItems cart.products}}</span>
+            </div>
+            <div class="summary-row total-row">
+                <span><strong>Total a pagar:</strong></span>
+                <span id="totalAmount"><strong>${{total}}</strong></span>
+            </div>
+        </div>
+        
+        <div class="checkout-actions">
+            <button onclick="proceedToCheckout()" class="btn-success checkout-btn">
+                💳 Proceder al Pago
+            </button>
+            <button onclick="saveForLater()" class="btn-secondary">
+                💾 Guardar para después
+            </button>
+        </div>
+    </div>
+    
+{{else}}
+    <!-- Carrito vacío -->
+    <div class="empty-cart">
+        <div class="empty-cart-icon">🛒</div>
+        <h3>Tu carrito está vacío</h3>
+        <p>No hay productos en este carrito. ¡Agrega algunos productos para comenzar!</p>
+        <a href="/" class="btn-primary">🛍️ Ir de Compras</a>
+    </div>
+{{/if}}
+
+<script>
+const cartId = '{{cartId}}';
+
+// Actualizar cantidad de producto
+async function updateQuantity(productId, newQuantity) {
+    newQuantity = parseInt(newQuantity);
+    
+    if (newQuantity < 1) {
+        if (confirm('¿Quieres eliminar este producto del carrito?')) {
+            await removeFromCart(productId);
+        }
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/carts/${cartId}/product/${productId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ quantity: newQuantity })
+        });
+        
+        if (response.ok) {
+            // Actualizar UI sin recargar página
+            await updateCartDisplay();
+            showAlert('Cantidad actualizada', 'success');
+        } else {
+            const error = await response.json();
+            showAlert('Error: ' + error.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Error actualizando cantidad:', error);
+        showAlert('Error de conexión', 'danger');
+    }
+}
+
+// Eliminar producto del carrito
+async function removeFromCart(productId) {
+    if (!confirm('¿Estás seguro de que quieres eliminar este producto?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/carts/${cartId}/product/${productId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showAlert('Producto eliminado del carrito', 'success');
+            // Recargar página después de un momento
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            const error = await response.json();
+            showAlert('Error: ' + error.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Error eliminando producto:', error);
+        showAlert('Error de conexión', 'danger');
+    }
+}
+
+// Vaciar carrito completo
+async function clearCart() {
+    if (!confirm('¿Estás seguro de que quieres vaciar todo el carrito?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/carts/${cartId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showAlert('Carrito vaciado', 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            const error = await response.json();
+            showAlert('Error: ' + error.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Error vaciando carrito:', error);
+        showAlert('Error de conexión', 'danger');
+    }
+}
+
+// Actualizar display del carrito
+async function updateCartDisplay() {
+    try {
+        const response = await fetch(`/api/carts/${cartId}`);
+        if (response.ok) {
+            const data = await response.json();
+            const cart = data.cart;
+            
+            // Actualizar cantidades y subtotales
+            cart.products.forEach(item => {
+                const quantityInput = document.getElementById(`quantity-${item.product._id}`);
+                const subtotalSpan = document.getElementById(`subtotal-${item.product._id}`);
+                
+                if (quantityInput) {
+                    quantityInput.value = item.quantity;
+                }
+                
+                if (subtotalSpan) {
+                    subtotalSpan.textContent = item.product.price * item.quantity;
+                }
+            });
+            
+            // Actualizar total
+            const totalResponse = await fetch(`/api/carts/${cartId}/total`);
+            if (totalResponse.ok) {
+                const totalData = await totalResponse.json();
+                document.getElementById('totalAmount').innerHTML = `<strong>$${totalData.total}</strong>`;
+            }
+            
+            // Actualizar total de items
+            const totalItems = cart.products.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('totalItems').textContent = totalItems;
+            
+        }
+    } catch (error) {
+        console.error('Error actualizando carrito:', error);
+    }
+}
+
+// Proceder al checkout
+function proceedToCheckout() {
+    showAlert('Función de checkout en desarrollo', 'info');
+    // TODO: Implementar checkout
+}
+
+// Guardar para después
+function saveForLater() {
+    showAlert('Carrito guardado en tu cuenta', 'success');
+    // TODO: Implementar guardar para después
+}
+
+// Mostrar alertas
+function showAlert(message, type) {
+    const alertContainer = document.getElementById('alertContainer');
+    const alertClass = `alert-${type}`;
+    
+    const alertHtml = `
+        <div class="alert ${alertClass}" style="margin-bottom: 15px;">
+            ${message}
+            <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; font-size: 18px; cursor: pointer;">&times;</button>
+        </div>
+    `;
+    
+    alertContainer.innerHTML = alertHtml;
+    
+    // Auto-remover después de 5 segundos
+    setTimeout(() => {
+        const alert = alertContainer.querySelector('.alert');
+        if (alert) alert.remove();
+    }, 5000);
+}
+</script>

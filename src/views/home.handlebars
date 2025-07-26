@@ -1,5 +1,15 @@
 <h2>Lista de Productos</h2>
 
+<!-- Status del carrito -->
+<div id="cartStatus" class="mb-3" style="background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #dee2e6;">
+    <strong>🛒 Carrito:</strong> <span id="cartCount">0</span> productos | 
+    <button id="viewCartBtn" class="btn-primary" style="margin-left: 10px;">Ver Carrito</button>
+    <button id="clearCartBtn" class="btn-danger" style="margin-left: 5px;">Limpiar Carrito</button>
+</div>
+
+<!-- Alertas -->
+<div id="alertContainer"></div>
+
 {{#if error}}
     <div class="alert alert-danger">
         {{error}}
@@ -32,6 +42,30 @@
                 <strong>Código:</strong> {{this.code}}<br>
                 <strong>ID:</strong> {{this._id}}
             </div>
+            
+            <!-- Controles del carrito -->
+            {{#if this.status}}
+                <div class="cart-controls" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label for="quantity-{{this._id}}" style="font-size: 14px;">Cantidad:</label>
+                        <input type="number" 
+                               id="quantity-{{this._id}}" 
+                               min="1" 
+                               max="{{this.stock}}" 
+                               value="1" 
+                               style="width: 80px; padding: 5px; margin-left: 5px;">
+                    </div>
+                    <button onclick="addToCart('{{this._id}}', '{{this.title}}', {{this.price}}, {{this.stock}})" 
+                            class="btn-success" 
+                            style="width: 100%;">
+                        🛒 Agregar al Carrito
+                    </button>
+                </div>
+            {{else}}
+                <div style="margin-top: 15px; padding: 10px; background: #f8d7da; color: #721c24; border-radius: 4px; text-align: center;">
+                    Producto no disponible
+                </div>
+            {{/if}}
         </div>
         {{/each}}
     </div>
@@ -40,3 +74,245 @@
         <p>No hay productos disponibles.</p>
     </div>
 {{/if}}
+
+<!-- Modal del carrito -->
+<div id="cartModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; max-width: 600px; width: 90%; max-height: 80%; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>🛒 Mi Carrito</h3>
+            <button onclick="closeCartModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        
+        <div id="cartContent">
+            <!-- Contenido del carrito se carga aquí -->
+        </div>
+        
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="font-size: 18px;">Total: $<span id="cartTotal">0</span></strong>
+                <div>
+                    <button onclick="closeCartModal()" class="btn-secondary" style="margin-right: 10px;">Cerrar</button>
+                    <button onclick="checkout()" class="btn-success">Finalizar Compra</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales
+let currentCartId = null;
+let cartItems = [];
+
+// Inicializar carrito al cargar la página
+document.addEventListener('DOMContentLoaded', async () => {
+    await initializeCart();
+});
+
+// Inicializar carrito
+async function initializeCart() {
+    try {
+        // Crear un nuevo carrito
+        const response = await fetch('/api/carts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            currentCartId = data.cart._id;
+            console.log('Carrito inicializado:', currentCartId);
+            updateCartDisplay();
+        } else {
+            showAlert('Error al inicializar carrito', 'danger');
+        }
+    } catch (error) {
+        console.error('Error inicializando carrito:', error);
+        showAlert('Error de conexión', 'danger');
+    }
+}
+
+// Agregar producto al carrito
+async function addToCart(productId, productTitle, productPrice, productStock) {
+    if (!currentCartId) {
+        showAlert('Error: Carrito no inicializado', 'danger');
+        return;
+    }
+    
+    const quantityInput = document.getElementById(`quantity-${productId}`);
+    const quantity = parseInt(quantityInput.value);
+    
+    // Validaciones
+    if (quantity < 1) {
+        showAlert('La cantidad debe ser mayor a 0', 'danger');
+        return;
+    }
+    
+    if (quantity > productStock) {
+        showAlert(`Solo hay ${productStock} unidades disponibles`, 'danger');
+        return;
+    }
+    
+    try {
+        // Agregar múltiples veces según la cantidad
+        for (let i = 0; i < quantity; i++) {
+            const response = await fetch(`/api/carts/${currentCartId}/product/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message);
+            }
+        }
+        
+        showAlert(`${quantity} x ${productTitle} agregado al carrito`, 'success');
+        quantityInput.value = 1; // Reset cantidad
+        await updateCartDisplay();
+        
+    } catch (error) {
+        console.error('Error agregando al carrito:', error);
+        showAlert('Error al agregar producto: ' + error.message, 'danger');
+    }
+}
+
+// Actualizar display del carrito
+async function updateCartDisplay() {
+    if (!currentCartId) return;
+    
+    try {
+        const response = await fetch(`/api/carts/${currentCartId}`);
+        if (response.ok) {
+            const data = await response.json();
+            const cart = data.cart;
+            cartItems = cart.products || [];
+            
+            // Actualizar contador
+            const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cartCount').textContent = totalItems;
+            
+        } else {
+            console.error('Error obteniendo carrito');
+        }
+    } catch (error) {
+        console.error('Error actualizando carrito:', error);
+    }
+}
+
+// Ver carrito - redirigir a vista específica
+async function viewCart() {
+    if (!currentCartId) {
+        showAlert('Carrito no inicializado', 'danger');
+        return;
+    }
+    
+    // Redirigir a la vista específica del carrito
+    window.location.href = `/carts/${currentCartId}`;
+}
+
+// Mostrar modal del carrito
+function displayCartModal(cart) {
+    const cartContent = document.getElementById('cartContent');
+    const cartTotal = document.getElementById('cartTotal');
+    
+    if (!cart.products || cart.products.length === 0) {
+        cartContent.innerHTML = '<p style="text-align: center; color: #6c757d;">El carrito está vacío</p>';
+        cartTotal.textContent = '0';
+    } else {
+        let total = 0;
+        let html = '';
+        
+        cart.products.forEach(item => {
+            const subtotal = item.product.price * item.quantity;
+            total += subtotal;
+            
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #dee2e6;">
+                    <div style="flex: 1;">
+                        <strong>${item.product.title}</strong><br>
+                        <small>$${item.product.price} c/u</small>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span>Cantidad: ${item.quantity}</span>
+                        <span style="font-weight: bold;">$${subtotal}</span>
+                        <button onclick="removeFromCart('${item.product._id}')" style="background: #dc3545; color: white; border: none; padding: 5px 8px; border-radius: 3px; cursor: pointer;">×</button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        cartContent.innerHTML = html;
+        cartTotal.textContent = total;
+    }
+    
+    document.getElementById('cartModal').style.display = 'block';
+}
+
+// Eliminar del carrito (implementar cuando esté la ruta)
+async function removeFromCart(productId) {
+    showAlert('Función en desarrollo', 'warning');
+    // TODO: Implementar cuando tengas la ruta DELETE
+}
+
+// Limpiar carrito
+async function clearCart() {
+    if (!currentCartId) return;
+    
+    if (confirm('¿Estás seguro de que quieres limpiar el carrito?')) {
+        // TODO: Implementar cuando tengas la ruta para limpiar carrito
+        showAlert('Función en desarrollo', 'warning');
+    }
+}
+
+// Finalizar compra
+function checkout() {
+    if (cartItems.length === 0) {
+        showAlert('El carrito está vacío', 'warning');
+        return;
+    }
+    
+    showAlert('Función de checkout en desarrollo', 'info');
+}
+
+// Cerrar modal
+function closeCartModal() {
+    document.getElementById('cartModal').style.display = 'none';
+}
+
+// Mostrar alertas
+function showAlert(message, type) {
+    const alertContainer = document.getElementById('alertContainer');
+    const alertClass = `alert-${type}`;
+    
+    const alertHtml = `
+        <div class="alert ${alertClass}" style="margin-bottom: 15px;">
+            ${message}
+            <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; font-size: 18px; cursor: pointer;">&times;</button>
+        </div>
+    `;
+    
+    alertContainer.innerHTML = alertHtml;
+    
+    // Auto-remover después de 5 segundos
+    setTimeout(() => {
+        const alert = alertContainer.querySelector('.alert');
+        if (alert) alert.remove();
+    }, 5000);
+}
+
+// Event listeners
+document.getElementById('viewCartBtn').addEventListener('click', viewCart);
+document.getElementById('clearCartBtn').addEventListener('click', clearCart);
+
+// Cerrar modal al hacer click fuera
+document.getElementById('cartModal').addEventListener('click', (e) => {
+    if (e.target.id === 'cartModal') {
+        closeCartModal();
+    }
+});
+</script>

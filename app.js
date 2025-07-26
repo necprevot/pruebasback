@@ -54,7 +54,22 @@ console.log('🎨 Configurando Handlebars...');
 app.engine('handlebars', engine({
     defaultLayout: 'main',
     layoutsDir: path.join(process.cwd(), 'src/views/layouts'),
-    viewsDir: path.join(process.cwd(), 'src/views')
+    viewsDir: path.join(process.cwd(), 'src/views'),
+    helpers: {
+        // Helper para multiplicar (precio * cantidad)
+        multiply: function(a, b) {
+            return a * b;
+        },
+        // Helper para obtener total de items
+        getTotalItems: function(products) {
+            if (!products || !Array.isArray(products)) return 0;
+            return products.reduce((total, item) => total + item.quantity, 0);
+        },
+        // Helper para JSON stringify (para debugging)
+        json: function(context) {
+            return JSON.stringify(context, null, 2);
+        }
+    }
 }));
 
 app.set('view engine', 'handlebars');
