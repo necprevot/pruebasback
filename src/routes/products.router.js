@@ -18,30 +18,20 @@ router.get("/", async (req, res) => {
     }
 });
 
-//Mostrar el producto por ID
+//Mostrar el producto por ID - CORREGIDO para usar MongoDB _id
 router.get("/:pid", async (req, res) => {
     try {
         const { pid } = req.params;
-        const products = await productManager.getProducts();
-        const product = products.find(p => p.id === parseInt(pid));
-        
-        if (!product) {
-            return res.status(404).json({ 
-                status: "error", 
-                message: `Producto con id: ${pid} no encontrado` 
-            });
-        }
+        const product = await productManager.getProductById(pid);
         
         res.json({ status: "success", product });
     } catch (error) {
-        res.status(500).json({ 
+        res.status(404).json({ 
             status: "error", 
-            message: "Error al obtener el producto", 
-            error: error.message 
+            message: error.message 
         });
     }
 });
-
 
 router.post('/', async (req, res) => {
   try {
@@ -107,16 +97,9 @@ router.put("/:pid", async (req, res) => {
         const { pid } = req.params;
         const updatedData = req.body;
         
-        // Actualiza todo menos el ID y Code
-        if (updatedData.id) {
-            delete updatedData.id;
-        }
-        if (updatedData.code) {
-            delete updatedData.code;
-        }
-        
-        const products = await productManager.updateProductById(pid, updatedData);
-        res.json({ status: "success", products });
+        // Actualizar usando el método corregido
+        const updatedProduct = await productManager.updateProductById(pid, updatedData);
+        res.json({ status: "success", product: updatedProduct });
     } catch (error) {
         res.status(500).json({ 
             status: "error", 
@@ -125,7 +108,6 @@ router.put("/:pid", async (req, res) => {
         });
     }
 });
-
 
 router.post('/:pid/delete', async (req, res) => {
   try {
@@ -164,7 +146,6 @@ router.post('/:pid/delete', async (req, res) => {
       });
   }
 });
-
 
 router.delete('/:pid', async (req, res) => {
   try {

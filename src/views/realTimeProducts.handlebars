@@ -82,7 +82,6 @@
 </div>
 
 <h3>Lista de Productos</h3>
-<!-- Mostrar productos -->
 <div id="productsList">
 </div>
 
@@ -97,17 +96,14 @@
     const adminSection = document.getElementById('adminSection');
     const nonAdminMessage = document.getElementById('nonAdminMessage');
 
-// Interruptor 
     let isAdmin = false;
 
-    // Manejo del interruptor de administrador
     adminToggle.addEventListener('change', (e) => {
         isAdmin = e.target.value === 'true';
         console.log('Admin mode changed to:', isAdmin);
         updateAdminInterface();
     });
 
-    // Función para actualizar la interfaz según el modo administrador
     function updateAdminInterface() {
         console.log('Updating interface, isAdmin:', isAdmin);
         
@@ -143,7 +139,6 @@
 
     socket.on('updateProducts', (products) => {
         console.log('Productos actualizados:', products);
-        // Guardar productos en sessionStorage para re-renderizar cuando cambie el modo admin
         sessionStorage.setItem('currentProducts', JSON.stringify(products));
         renderProducts(products);
     });
@@ -162,7 +157,8 @@
                     Stock: ${product.stock} | 
                     Categoría: ${product.category} | 
                     Estado: <span class="${product.status ? 'text-success' : 'text-danger'}">${product.status ? 'Activo' : 'Inactivo'}</span> | 
-                    Código: ${product.code}
+                    Código: ${product.code} | 
+                    ID: ${product._id}
                 </div>
                 ${product.thumbnails && product.thumbnails.length > 0 ? 
                     `<div class="product-images">
@@ -171,7 +167,7 @@
                         ).join('')}
                     </div>` : ''}
                 ${isAdmin ? `
-                    <button onclick="deleteProduct(${product.id})" class="btn-danger mt-3">
+                    <button onclick="deleteProduct('${product._id}')" class="btn-danger mt-3">
                         Eliminar
                     </button>
                 ` : `
@@ -185,7 +181,7 @@
         productsList.innerHTML = productsHTML;
     }
 
-    // Función para eliminar producto (solo si es admin)
+    // Función para eliminar producto - CORREGIDO para usar _id
     window.deleteProduct = function(productId) {
         if (!isAdmin) {
             alert('Solo los administradores pueden eliminar productos. Active el modo administrador.');
@@ -197,7 +193,6 @@
         }
     }
 
-    // Manejo del formulario (solo si es admin)
     productForm.addEventListener('submit', (e) => {
         e.preventDefault();
         
@@ -209,7 +204,6 @@
         const formData = new FormData(productForm);
         const thumbnails = formData.get('thumbnails');
         
-        // Procesar thumbnails para convertir nombres de archivo a rutas
         const thumbnailsArray = thumbnails ? 
             thumbnails.split(',')
                 .map(filename => filename.trim())
@@ -231,7 +225,6 @@
         productForm.reset();
     });
 
-    // Manejo de errores
     socket.on('error', (error) => {
         alert('Error: ' + error.message);
     });

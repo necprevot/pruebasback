@@ -13,10 +13,11 @@ router.get('/', async (req, res) => {
           products: products 
       });
   } catch (error) {
+      console.error('Error en ruta home:', error);
       res.render('home', { 
           title: 'Inicio',
           products: [],
-          error: 'Error al cargar productos'
+          error: 'Error al cargar productos: ' + error.message
       });
   }
 });
@@ -30,10 +31,11 @@ router.get('/realtimeproducts', async (req, res) => {
           products: products 
       });
   } catch (error) {
+      console.error('Error en ruta realtimeproducts:', error);
       res.render('realTimeProducts', { 
           title: 'Productos en Tiempo Real',
           products: [],
-          error: 'Error al cargar productos'
+          error: 'Error al cargar productos: ' + error.message
       });
   }
 });

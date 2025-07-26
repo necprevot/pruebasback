@@ -29,7 +29,8 @@
                 <strong>Stock:</strong> {{this.stock}} | 
                 <strong>Categoría:</strong> {{this.category}} | 
                 <strong>Estado:</strong> <span class="{{#if this.status}}text-success{{else}}text-danger{{/if}}">{{#if this.status}}Activo{{else}}Inactivo{{/if}}</span><br>
-                <strong>Código:</strong> {{this.code}}
+                <strong>Código:</strong> {{this.code}}<br>
+                <strong>ID:</strong> {{this._id}}
             </div>
         </div>
         {{/each}}

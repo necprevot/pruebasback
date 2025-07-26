@@ -14,7 +14,7 @@ const productSchema = new mongoose.Schema({
   },
   code: {
     type: String,
-    unique: true,
+    unique: true, // Esto ya crea un índice automáticamente
     trim: true
     // No se permite proporcionar código manualmente, siempre se genera automáticamente
   },
@@ -46,8 +46,8 @@ const productSchema = new mongoose.Schema({
   versionKey: false
 });
 
-// Índices para mejorar performance
-productSchema.index({ code: 1 });
+// ELIMINÉ LOS ÍNDICES DUPLICADOS - unique: true ya crea el índice automáticamente
+// Solo dejamos los índices que no están duplicados
 productSchema.index({ category: 1 });
 productSchema.index({ status: 1 });
 

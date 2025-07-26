@@ -20,6 +20,7 @@ class ProductManager extends BaseManager {
             // El código se genera automáticamente en el modelo (pre-save hook)
             // Usar el método heredado de BaseManager
             const newProduct = await this.add(productData);
+            console.log('Producto agregado:', JSON.stringify(newProduct, null, 2));
             return newProduct;
             
         } catch (error) {
@@ -27,9 +28,37 @@ class ProductManager extends BaseManager {
         }
     }
 
-    // Mantener compatibilidad con tu método original
+    // Mantener compatibilidad con tu método original - CON DEBUGGING
     async getProducts(limit = null) {
-        return await this.getAll(limit);
+        try {
+            const products = await this.getAll(limit);
+            
+            // DEBUGGING DETALLADO
+            console.log('=== DEBUGGING getProducts ===');
+            console.log('Raw products desde DB:', products.length, 'productos encontrados');
+            
+            if (products.length > 0) {
+                const firstProduct = products[0];
+                console.log('Primer producto raw:', JSON.stringify(firstProduct, null, 2));
+                console.log('Tipo de primer producto:', typeof firstProduct);
+                console.log('Es un documento de Mongoose?', firstProduct.constructor.name);
+                
+                // Convertir a objeto plano si es necesario
+                const plainObject = firstProduct.toObject ? firstProduct.toObject() : firstProduct;
+                console.log('Primer producto como objeto plano:', JSON.stringify(plainObject, null, 2));
+            }
+            console.log('=== FIN DEBUG getProducts ===');
+            
+            // Convertir documentos de Mongoose a objetos planos
+            const plainProducts = products.map(product => 
+                product.toObject ? product.toObject() : product
+            );
+            
+            return plainProducts;
+        } catch (error) {
+            console.error('Error en getProducts:', error);
+            throw error;
+        }
     }
 
     // Mantener compatibilidad con tu método original
