@@ -1,82 +1,266 @@
-<h2>Lista de Productos</h2>
+<div class="page-header">
+    <h2>{{#if filters.search}}Resultados para: "{{filters.search}}"{{else}}Catálogo de Productos{{/if}}</h2>
+    
+    <!-- Estadísticas rápidas -->
+    {{#if stats}}
+    <div class="stats-bar">
+        <span class="stat-item">📦 Total: {{stats.totalProducts}}</span>
+        <span class="stat-item">✅ Activos: {{stats.activeProducts}}</span>
+        <span class="stat-item">📊 Categorías: {{filters.categories.length}}</span>
+        {{#if pagination.totalDocs}}
+        <span class="stat-item">🔍 Mostrando: {{pagination.totalDocs}} productos</span>
+        {{/if}}
+    </div>
+    {{/if}}
+</div>
 
 <!-- Status del carrito -->
-<div id="cartStatus" class="mb-3" style="background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #dee2e6;">
-    <strong>🛒 Carrito:</strong> <span id="cartCount">0</span> productos | 
-    <button id="viewCartBtn" class="btn-primary" style="margin-left: 10px;">Ver Carrito</button>
-    <button id="clearCartBtn" class="btn-danger" style="margin-left: 5px;">Limpiar Carrito</button>
-    <button id="newCartBtn" class="btn-secondary" style="margin-left: 5px;">Nuevo Carrito</button>
+<div id="cartStatus" class="cart-status-bar">
+    <div class="cart-info">
+        <strong>🛒 Carrito:</strong> <span id="cartCount">0</span> productos
+    </div>
+    <div class="cart-actions">
+        <button id="viewCartBtn" class="btn-primary">Ver Carrito</button>
+        <button id="clearCartBtn" class="btn-danger">Limpiar</button>
+        <button id="newCartBtn" class="btn-secondary">Nuevo</button>
+    </div>
 </div>
 
 <!-- Alertas -->
 <div id="alertContainer"></div>
 
 {{#if error}}
-    <div class="alert alert-danger">
-        {{error}}
-    </div>
+    <div class="alert alert-danger">{{error}}</div>
 {{/if}}
 
+<!-- Filtros y Búsqueda -->
+<div class="filters-section">
+    <form id="filtersForm" method="GET" action="/">
+        <div class="filters-row">
+            <!-- Búsqueda por texto -->
+            <div class="filter-group">
+                <label for="search">🔍 Buscar:</label>
+                <input type="text" 
+                       id="search" 
+                       name="search" 
+                       value="{{filters.search}}" 
+                       placeholder="Buscar productos...">
+            </div>
+
+            <!-- Filtro por categoría -->
+            <div class="filter-group">
+                <label for="category">📂 Categoría:</label>
+                <select id="category" name="category">
+                    <option value="all" {{#eq filters.currentCategory 'all'}}selected{{/eq}}>Todas</option>
+                    {{#each filters.categories}}
+                        <option value="{{this}}" {{#eq this ../filters.currentCategory}}selected{{/eq}}>{{this}}</option>
+                    {{/each}}
+                </select>
+            </div>
+
+            <!-- Filtro por disponibilidad -->
+            <div class="filter-group">
+                <label for="availability">📦 Disponibilidad:</label>
+                <select id="availability" name="availability">
+                    <option value="all" {{#eq filters.currentAvailability 'all'}}selected{{/eq}}>Todos</option>
+                    <option value="available" {{#eq filters.currentAvailability 'available'}}selected{{/eq}}>Disponibles</option>
+                    <option value="outOfStock" {{#eq filters.currentAvailability 'outOfStock'}}selected{{/eq}}>Sin Stock</option>
+                    <option value="lowStock" {{#eq filters.currentAvailability 'lowStock'}}selected{{/eq}}>Stock Bajo</option>
+                </select>
+            </div>
+
+            <!-- Ordenamiento -->
+            <div class="filter-group">
+                <label for="sort">📊 Ordenar por:</label>
+                <select id="sort" name="sort">
+                    <option value="status_desc" {{#eq filters.currentSort 'status_desc'}}selected{{/eq}}>Relevancia</option>
+                    <option value="price_asc" {{#eq filters.currentSort 'price_asc'}}selected{{/eq}}>Precio: Menor a Mayor</option>
+                    <option value="price_desc" {{#eq filters.currentSort 'price_desc'}}selected{{/eq}}>Precio: Mayor a Menor</option>
+                    <option value="title_asc" {{#eq filters.currentSort 'title_asc'}}selected{{/eq}}>Nombre A-Z</option>
+                    <option value="title_desc" {{#eq filters.currentSort 'title_desc'}}selected{{/eq}}>Nombre Z-A</option>
+                    <option value="newest" {{#eq filters.currentSort 'newest'}}selected{{/eq}}>Más Recientes</option>
+                    <option value="stock_desc" {{#eq filters.currentSort 'stock_desc'}}selected{{/eq}}>Mayor Stock</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="filters-row">
+            <!-- Rango de precios -->
+            <div class="filter-group">
+                <label for="minPrice">💰 Precio desde:</label>
+                <input type="number" 
+                       id="minPrice" 
+                       name="minPrice" 
+                       value="{{filters.minPrice}}" 
+                       placeholder="Mín"
+                       min="0"
+                       step="1">
+            </div>
+
+            <div class="filter-group">
+                <label for="maxPrice">💰 Precio hasta:</label>
+                <input type="number" 
+                       id="maxPrice" 
+                       name="maxPrice" 
+                       value="{{filters.maxPrice}}" 
+                       placeholder="Máx"
+                       min="0"
+                       step="1">
+            </div>
+
+            <!-- Productos por página -->
+            <div class="filter-group">
+                <label for="limit">📄 Por página:</label>
+                <select id="limit" name="limit">
+                    <option value="6" {{#eq pagination.limit 6}}selected{{/eq}}>6</option>
+                    <option value="12" {{#eq pagination.limit 12}}selected{{/eq}}>12</option>
+                    <option value="24" {{#eq pagination.limit 24}}selected{{/eq}}>24</option>
+                    <option value="48" {{#eq pagination.limit 48}}selected{{/eq}}>48</option>
+                </select>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="filter-actions">
+                <button type="submit" class="btn-primary">🔍 Filtrar</button>
+                <a href="/" class="btn-secondary">🔄 Limpiar</a>
+            </div>
+        </div>
+
+        <!-- Campo oculto para mantener la página -->
+        <input type="hidden" name="page" value="{{pagination.page}}">
+    </form>
+</div>
+
+<!-- Productos -->
 {{#if products}}
     <div class="products-grid">
         {{#each products}}
-        <div class="product-card">
-            <div class="product-title">{{this.title}}</div>
-            <div class="product-price">${{this.price}}</div>
+        <div class="product-card {{#unless this.status}}product-disabled{{/unless}}">
+            <div class="product-header">
+                <div class="product-title">{{this.title}}</div>
+                <div class="product-price">${{this.price}}</div>
+            </div>
             
-            {{#if this.thumbnails}}
-                {{#if this.thumbnails.length}}
-                    <div class="product-images">
-                        {{#each this.thumbnails}}
+            {{#if this.thumbnails.length}}
+                <div class="product-images">
+                    {{#each this.thumbnails}}
+                        {{#if @first}}
                             <img src="{{this}}" alt="{{../this.title}}" class="product-image" onerror="this.style.display='none';">
-                        {{/each}}
-                    </div>
-                {{/if}}
+                        {{/if}}
+                    {{/each}}
+                </div>
+            {{else}}
+                <div class="product-no-image">📦</div>
             {{/if}}
             
             <p class="product-description">{{this.description}}</p>
             
             <div class="product-details">
-                <strong>Stock:</strong> {{this.stock}} | 
-                <strong>Categoría:</strong> {{this.category}} | 
-                <strong>Estado:</strong> <span class="{{#if this.status}}text-success{{else}}text-danger{{/if}}">{{#if this.status}}Activo{{else}}Inactivo{{/if}}</span><br>
-                <strong>Código:</strong> {{this.code}}<br>
-                <strong>ID:</strong> {{this._id}}
+                <div class="product-info-row">
+                    <span class="info-item">
+                        <strong>Stock:</strong> 
+                        <span class="{{#if this.stock}}{{#if (gt this.stock 5)}}text-success{{else}}text-warning{{/if}}{{else}}text-danger{{/if}}">
+                            {{#if this.stock}}{{this.stock}}{{else}}Sin stock{{/if}}
+                        </span>
+                    </span>
+                    <span class="info-item">
+                        <strong>Categoría:</strong> {{this.category}}
+                    </span>
+                </div>
+                <div class="product-info-row">
+                    <span class="info-item">
+                        <strong>Estado:</strong> 
+                        <span class="{{#if this.status}}text-success{{else}}text-danger{{/if}}">
+                            {{#if this.status}}Activo{{else}}Inactivo{{/if}}
+                        </span>
+                    </span>
+                    <span class="info-item">
+                        <strong>Código:</strong> {{this.code}}
+                    </span>
+                </div>
             </div>
             
             <!-- Controles del carrito -->
             {{#if this.status}}
-                <div class="cart-controls" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
-                    <div class="form-group" style="margin-bottom: 10px;">
-                        <label for="quantity-{{this._id}}" style="font-size: 14px;">Cantidad:</label>
-                        <input type="number" 
-                               id="quantity-{{this._id}}" 
-                               min="1" 
-                               max="{{this.stock}}" 
-                               value="1" 
-                               style="width: 80px; padding: 5px; margin-left: 5px;">
+                {{#if this.stock}}
+                    <div class="cart-controls">
+                        <div class="quantity-section">
+                            <label for="quantity-{{this._id}}">Cantidad:</label>
+                            <input type="number" 
+                                   id="quantity-{{this._id}}" 
+                                   min="1" 
+                                   max="{{this.stock}}" 
+                                   value="1" 
+                                   class="quantity-input">
+                        </div>
+                        <button onclick="addToCart('{{this._id}}', '{{this.title}}', {{this.price}}, {{this.stock}})" 
+                                class="btn-success add-to-cart-btn">
+                            🛒 Agregar al Carrito
+                        </button>
                     </div>
-                    <button onclick="addToCart('{{this._id}}', '{{this.title}}', {{this.price}}, {{this.stock}})" 
-                            class="btn-success" 
-                            style="width: 100%;">
-                        🛒 Agregar al Carrito
-                    </button>
-                </div>
+                {{else}}
+                    <div class="out-of-stock">
+                        <span class="stock-message">Sin stock disponible</span>
+                    </div>
+                {{/if}}
             {{else}}
-                <div style="margin-top: 15px; padding: 10px; background: #f8d7da; color: #721c24; border-radius: 4px; text-align: center;">
-                    Producto no disponible
+                <div class="product-inactive">
+                    <span class="inactive-message">Producto no disponible</span>
                 </div>
             {{/if}}
         </div>
         {{/each}}
     </div>
+
+    <!-- Paginación -->
+    {{#if pagination}}
+        {{#if (gt pagination.totalPages 1)}}
+            <div class="pagination-section">
+                <div class="pagination-info">
+                    Mostrando {{#if products.length}}{{pagination.limit}}{{else}}0{{/if}} de {{pagination.totalDocs}} productos 
+                    (Página {{pagination.page}} de {{pagination.totalPages}})
+                </div>
+                
+                <div class="pagination-controls">
+                    {{#if pagination.hasPrevPage}}
+                        <a href="?{{buildQueryString query page=1}}" class="btn-pagination">⏮️ Primera</a>
+                        <a href="?{{buildQueryString query page=pagination.prevPage}}" class="btn-pagination">⬅️ Anterior</a>
+                    {{/if}}
+                    
+                    <!-- Números de página -->
+                    {{#each (range (subtract pagination.page 2) (add pagination.page 2) 1 pagination.totalPages)}}
+                        {{#if (eq this ../pagination.page)}}
+                            <span class="btn-pagination current-page">{{this}}</span>
+                        {{else}}
+                            <a href="?{{buildQueryString ../query page=this}}" class="btn-pagination">{{this}}</a>
+                        {{/if}}
+                    {{/each}}
+                    
+                    {{#if pagination.hasNextPage}}
+                        <a href="?{{buildQueryString query page=pagination.nextPage}}" class="btn-pagination">Siguiente ➡️</a>
+                        <a href="?{{buildQueryString query page=pagination.totalPages}}" class="btn-pagination">Última ⏭️</a>
+                    {{/if}}
+                </div>
+            </div>
+        {{/if}}
+    {{/if}}
+
 {{else}}
-    <div class="alert alert-danger">
-        <p>No hay productos disponibles.</p>
+    <div class="no-products">
+        <div class="no-products-icon">🔍</div>
+        <h3>No se encontraron productos</h3>
+        <p>
+            {{#if filters.search}}
+                No hay productos que coincidan con tu búsqueda "{{filters.search}}".
+            {{else}}
+                No hay productos disponibles con los filtros seleccionados.
+            {{/if}}
+        </p>
+        <a href="/" class="btn-primary">Ver Todos los Productos</a>
     </div>
 {{/if}}
 
-<!-- Modal del carrito -->
+<!-- Modal del carrito (mantener existente) -->
 <div id="cartModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; max-width: 600px; width: 90%; max-height: 80%; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -101,25 +285,22 @@
 </div>
 
 <script>
-// Variables globales
+// Variables globales (mantener del archivo original)
 let currentCartId = null;
 let cartItems = [];
 
-// Funciones de gestión de carrito persistente
+// Funciones de gestión de carrito persistente (mantener todas del original)
 const CartSession = {
-    // Guardar ID del carrito en localStorage
     save: function(cartId) {
         localStorage.setItem('bbfermentos_cart_id', cartId);
         localStorage.setItem('bbfermentos_cart_timestamp', Date.now().toString());
         console.log('💾 Carrito guardado en sesión:', cartId);
     },
     
-    // Obtener ID del carrito desde localStorage
     get: function() {
         const cartId = localStorage.getItem('bbfermentos_cart_id');
         const timestamp = localStorage.getItem('bbfermentos_cart_timestamp');
         
-        // Verificar si el carrito no es muy antiguo (24 horas)
         if (cartId && timestamp) {
             const age = Date.now() - parseInt(timestamp);
             const maxAge = 24 * 60 * 60 * 1000; // 24 horas
@@ -135,14 +316,12 @@ const CartSession = {
         return null;
     },
     
-    // Limpiar sesión
     clear: function() {
         localStorage.removeItem('bbfermentos_cart_id');
         localStorage.removeItem('bbfermentos_cart_timestamp');
         console.log('🗑️ Sesión de carrito limpiada');
     },
     
-    // Verificar si existe un carrito en el servidor
     verify: async function(cartId) {
         try {
             const response = await fetch(`/api/carts/${cartId}`);
@@ -156,21 +335,58 @@ const CartSession = {
     }
 };
 
-// Inicializar carrito al cargar la página
+// Auto-aplicar filtros en tiempo real
 document.addEventListener('DOMContentLoaded', async () => {
     await initializeCart();
+    initializeFilters();
 });
 
-// Inicializar carrito con persistencia
+// Inicializar filtros
+function initializeFilters() {
+    const form = document.getElementById('filtersForm');
+    const searchInput = document.getElementById('search');
+    let searchTimeout;
+
+    // Auto-submit en cambios de filtros (excepto búsqueda)
+    const filterInputs = form.querySelectorAll('select, input[type="number"]');
+    filterInputs.forEach(input => {
+        input.addEventListener('change', () => {
+            // Resetear página a 1 cuando cambian los filtros
+            document.querySelector('input[name="page"]').value = 1;
+            form.submit();
+        });
+    });
+
+    // Búsqueda con debounce
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            if (e.target.value.length >= 2 || e.target.value.length === 0) {
+                document.querySelector('input[name="page"]').value = 1;
+                form.submit();
+            }
+        }, 500); // 500ms de debounce
+    });
+
+    // Prevenir submit en Enter durante la escritura
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            clearTimeout(searchTimeout);
+            document.querySelector('input[name="page"]').value = 1;
+            form.submit();
+        }
+    });
+}
+
+// Mantener todas las funciones de carrito del archivo original
 async function initializeCart() {
     try {
         console.log('🚀 Inicializando carrito...');
         
-        // Intentar recuperar carrito existente
         const savedCartId = CartSession.get();
         
         if (savedCartId) {
-            // Verificar que el carrito todavía existe en el servidor
             const cartExists = await CartSession.verify(savedCartId);
             
             if (cartExists) {
@@ -184,7 +400,6 @@ async function initializeCart() {
             }
         }
         
-        // Crear nuevo carrito si no hay uno válido
         console.log('🆕 Creando nuevo carrito...');
         const response = await fetch('/api/carts', {
             method: 'POST',
@@ -208,7 +423,6 @@ async function initializeCart() {
     }
 }
 
-// Crear nuevo carrito manualmente
 async function createNewCart() {
     if (confirm('¿Estás seguro de que quieres crear un nuevo carrito? Se perderá el carrito actual.')) {
         CartSession.clear();
@@ -217,7 +431,6 @@ async function createNewCart() {
     }
 }
 
-// Agregar producto al carrito
 async function addToCart(productId, productTitle, productPrice, productStock) {
     if (!currentCartId) {
         showAlert('Error: Carrito no inicializado', 'danger');
@@ -228,7 +441,6 @@ async function addToCart(productId, productTitle, productPrice, productStock) {
     const quantityInput = document.getElementById(`quantity-${productId}`);
     const quantity = parseInt(quantityInput.value);
     
-    // Validaciones
     if (quantity < 1) {
         showAlert('La cantidad debe ser mayor a 0', 'danger');
         return;
@@ -240,7 +452,6 @@ async function addToCart(productId, productTitle, productPrice, productStock) {
     }
     
     try {
-        // Agregar múltiples veces según la cantidad
         for (let i = 0; i < quantity; i++) {
             const response = await fetch(`/api/carts/${currentCartId}/product/${productId}`, {
                 method: 'POST',
@@ -256,10 +467,8 @@ async function addToCart(productId, productTitle, productPrice, productStock) {
         }
         
         showAlert(`${quantity} x ${productTitle} agregado al carrito`, 'success');
-        quantityInput.value = 1; // Reset cantidad
+        quantityInput.value = 1;
         await updateCartDisplay();
-        
-        // Actualizar timestamp de actividad
         CartSession.save(currentCartId);
         
     } catch (error) {
@@ -268,7 +477,6 @@ async function addToCart(productId, productTitle, productPrice, productStock) {
     }
 }
 
-// Actualizar display del carrito
 async function updateCartDisplay() {
     if (!currentCartId) return;
     
@@ -386,7 +594,7 @@ document.getElementById('viewCartBtn').addEventListener('click', viewCart);
 document.getElementById('clearCartBtn').addEventListener('click', clearCart);
 document.getElementById('newCartBtn').addEventListener('click', createNewCart);
 
-// Cerrar modal al hacer click fuera
+// Cerrar modal al hace click fuera
 document.getElementById('cartModal').addEventListener('click', (e) => {
     if (e.target.id === 'cartModal') {
         closeCartModal();

@@ -1,0 +1,536 @@
+<div class="search-header">
+    <h2>🔍 Resultados de búsqueda para: "{{searchTerm}}"</h2>
+    {{#if totalResults}}
+        <p class="search-stats">Se encontraron {{formatNumber totalResults}} {{pluralize totalResults "resultado" "resultados"}}</p>
+    {{else}}
+        <p class="search-stats no-results">No se encontraron resultados</p>
+    {{/if}}
+</div>
+
+<!-- Sugerencias si no hay resultados -->
+{{#if suggestions}}
+    {{#unless (hasItems products)}}
+        <div class="suggestions-section">
+            <h3>💡 Quizás estabas buscando:</h3>
+            <div class="suggestions-list">
+                {{#each suggestions}}
+                    <a href="/?search={{this.value}}" class="suggestion-item">
+                        {{#eq this.type 'category'}}📂{{else}}📦{{/eq}} {{this.value}}
+                    </a>
+                {{/each}}
+            </div>
+        </div>
+    {{/unless}}
+{{/if}}
+
+<!-- Filtros de búsqueda -->
+{{#if (hasItems products)}}
+    <div class="search-filters">
+        <form method="GET" action="/search">
+            <input type="hidden" name="q" value="{{searchTerm}}">
+            
+            <div class="filters-row">
+                <div class="filter-group">
+                    <label for="category">📂 Categoría:</label>
+                    <select id="category" name="category" onchange="this.form.submit()">
+                        <option value="all" {{#eq filters.currentCategory 'all'}}selected{{/eq}}>Todas</option>
+                        {{#each filters.categories}}
+                            <option value="{{this}}" {{#eq this ../filters.currentCategory}}selected{{/eq}}>{{this}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="availability">📦 Disponibilidad:</label>
+                    <select id="availability" name="availability" onchange="this.form.submit()">
+                        <option value="all" {{#eq filters.currentAvailability 'all'}}selected{{/eq}}>Todos</option>
+                        <option value="available" {{#eq filters.currentAvailability 'available'}}selected{{/eq}}>Disponibles</option>
+                        <option value="outOfStock" {{#eq filters.currentAvailability 'outOfStock'}}selected{{/eq}}>Sin Stock</option>
+                        <option value="lowStock" {{#eq filters.currentAvailability 'lowStock'}}selected{{/eq}}>Stock Bajo</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="sort">📊 Ordenar:</label>
+                    <select id="sort" name="sort" onchange="this.form.submit()">
+                        <option value="relevance" {{#eq filters.currentSort 'relevance'}}selected{{/eq}}>Relevancia</option>
+                        <option value="price_asc" {{#eq filters.currentSort 'price_asc'}}selected{{/eq}}>Precio: Menor a Mayor</option>
+                        <option value="price_desc" {{#eq filters.currentSort 'price_desc'}}selected{{/eq}}>Precio: Mayor a Menor</option>
+                        <option value="title_asc" {{#eq filters.currentSort 'title_asc'}}selected{{/eq}}>Nombre A-Z</option>
+                        <option value="newest" {{#eq filters.currentSort 'newest'}}selected{{/eq}}>Más Recientes</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="minPrice">💰 Precio mín:</label>
+                    <input type="number" id="minPrice" name="minPrice" value="{{filters.minPrice}}" placeholder="Desde" min="0">
+                </div>
+
+                <div class="filter-group">
+                    <label for="maxPrice">💰 Precio máx:</label>
+                    <input type="number" id="maxPrice" name="maxPrice" value="{{filters.maxPrice}}" placeholder="Hasta" min="0">
+                </div>
+
+                <button type="submit" class="btn-primary">Filtrar</button>
+            </div>
+        </form>
+    </div>
+{{/if}}
+
+<!-- Resultados de búsqueda -->
+{{#if (hasItems products)}}
+    <div class="search-results">
+        <div class="results-header">
+            <span class="results-count">
+                Mostrando {{length products}} de {{totalResults}} productos
+                {{#if pagination.totalPages}}
+                    (Página {{pagination.page}} de {{pagination.totalPages}})
+                {{/if}}
+            </span>
+        </div>
+
+        <div class="products-grid">
+            {{#each products}}
+                <div class="product-card {{#unless this.status}}product-disabled{{/unless}}">
+                    <div class="product-header">
+                        <div class="product-title">
+                            {{{highlight this.title ../searchTerm}}}
+                        </div>
+                        <div class="product-price">{{formatPrice this.price}}</div>
+                    </div>
+                    
+                    {{#if this.thumbnails.length}}
+                        <div class="product-images">
+                            <img src="{{imageUrl (first this.thumbnails)}}" 
+                                 alt="{{this.title}}" 
+                                 class="product-image" 
+                                 onerror="this.src='/img/no-image.png';">
+                        </div>
+                    {{else}}
+                        <div class="product-no-image">📦</div>
+                    {{/if}}
+                    
+                    <div class="product-description">
+                        {{{highlight (truncate this.description 120) ../searchTerm}}}
+                    </div>
+                    
+                    <div class="product-details">
+                        <div class="product-meta">
+                            <span class="category-badge">{{this.category}}</span>
+                            <span class="stock-badge {{stockClass this.stock}}">
+                                {{stockStatus this.stock}}
+                            </span>
+                            {{#if (isNew this.createdAt)}}
+                                <span class="new-badge">¡Nuevo!</span>
+                            {{/if}}
+                        </div>
+                        
+                        <div class="product-info">
+                            <small>Stock: <strong>{{this.stock}}</strong></small>
+                            <small>Código: <strong>{{this.code}}</strong></small>
+                        </div>
+                    </div>
+                    
+                    <!-- Controles del carrito -->
+                    {{#if (and this.status (gt this.stock 0))}}
+                        <div class="cart-controls">
+                            <div class="quantity-section">
+                                <label for="quantity-{{this._id}}">Cantidad:</label>
+                                <input type="number" 
+                                       id="quantity-{{this._id}}" 
+                                       min="1" 
+                                       max="{{this.stock}}" 
+                                       value="1" 
+                                       class="quantity-input">
+                            </div>
+                            <button onclick="addToCart('{{this._id}}', '{{escapeHtml this.title}}', {{this.price}}, {{this.stock}})" 
+                                    class="btn-success add-to-cart-btn">
+                                🛒 Agregar al Carrito
+                            </button>
+                            <a href="/product/{{this._id}}" class="btn-info view-product-btn">
+                                👁️ Ver Detalles
+                            </a>
+                        </div>
+                    {{else}}
+                        <div class="product-unavailable">
+                            {{#if this.status}}
+                                <span class="out-of-stock">Sin stock disponible</span>
+                            {{else}}
+                                <span class="product-inactive">Producto no disponible</span>
+                            {{/if}}
+                            <a href="/product/{{this._id}}" class="btn-secondary view-product-btn">
+                                👁️ Ver Detalles
+                            </a>
+                        </div>
+                    {{/if}}
+                </div>
+            {{/each}}
+        </div>
+
+        <!-- Paginación para búsqueda -->
+        {{#if pagination}}
+            {{#if (gt pagination.totalPages 1)}}
+                <div class="pagination-section">
+                    <div class="pagination-info">
+                        Página {{pagination.page}} de {{pagination.totalPages}} 
+                        ({{totalResults}} {{pluralize totalResults "resultado" "resultados"}} total)
+                    </div>
+                    
+                    <div class="pagination-controls">
+                        {{#if pagination.hasPrevPage}}
+                            <a href="/search?q={{searchTerm}}&{{buildQueryString query page=1}}" class="btn-pagination">⏮️ Primera</a>
+                            <a href="/search?q={{searchTerm}}&{{buildQueryString query page=pagination.prevPage}}" class="btn-pagination">⬅️ Anterior</a>
+                        {{/if}}
+                        
+                        {{#each (range (subtract pagination.page 2) (add pagination.page 2) 1 pagination.totalPages)}}
+                            {{#if (eq this ../pagination.page)}}
+                                <span class="btn-pagination current-page">{{this}}</span>
+                            {{else}}
+                                <a href="/search?q={{../searchTerm}}&{{buildQueryString ../query page=this}}" class="btn-pagination">{{this}}</a>
+                            {{/if}}
+                        {{/each}}
+                        
+                        {{#if pagination.hasNextPage}}
+                            <a href="/search?q={{searchTerm}}&{{buildQueryString query page=pagination.nextPage}}" class="btn-pagination">Siguiente ➡️</a>
+                            <a href="/search?q={{searchTerm}}&{{buildQueryString query page=pagination.totalPages}}" class="btn-pagination">Última ⏭️</a>
+                        {{/if}}
+                    </div>
+                </div>
+            {{/if}}
+        {{/if}}
+    </div>
+
+{{else}}
+    <!-- Sin resultados -->
+    <div class="no-results-section">
+        <div class="no-results-icon">🔍</div>
+        <h3>No se encontraron productos</h3>
+        <p>Tu búsqueda de <strong>"{{searchTerm}}"</strong> no coincide con ningún producto.</p>
+        
+        <div class="search-suggestions">
+            <h4>💡 Sugerencias:</h4>
+            <ul>
+                <li>Verifica la ortografía de las palabras</li>
+                <li>Utiliza términos más generales</li>
+                <li>Prueba con sinónimos</li>
+                <li>Reduce el número de palabras</li>
+            </ul>
+        </div>
+
+        <div class="alternative-actions">
+            <a href="/" class="btn-primary">Ver Todos los Productos</a>
+            <a href="/realtimeproducts" class="btn-secondary">Productos en Tiempo Real</a>
+        </div>
+    </div>
+{{/if}}
+
+<!-- Status del carrito (mantener del home) -->
+<div id="cartStatus" class="cart-status-bar">
+    <div class="cart-info">
+        <strong>🛒 Carrito:</strong> <span id="cartCount">0</span> productos
+    </div>
+    <div class="cart-actions">
+        <button id="viewCartBtn" class="btn-primary">Ver Carrito</button>
+        <button id="clearCartBtn" class="btn-danger">Limpiar</button>
+        <button id="newCartBtn" class="btn-secondary">Nuevo</button>
+    </div>
+</div>
+
+<!-- Alertas -->
+<div id="alertContainer"></div>
+
+<style>
+/* Estilos específicos para la búsqueda */
+.search-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 8px;
+}
+
+.search-header h2 {
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.search-stats {
+    color: var(--secondary-color);
+    font-size: 1.1rem;
+}
+
+.search-stats.no-results {
+    color: var(--danger-color);
+    font-weight: 600;
+}
+
+.suggestions-section {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.suggestions-section h3 {
+    color: #856404;
+    margin-bottom: 15px;
+}
+
+.suggestions-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.suggestion-item {
+    display: inline-block;
+    padding: 8px 15px;
+    background: white;
+    border: 1px solid #ffeaa7;
+    border-radius: 20px;
+    text-decoration: none;
+    color: #856404;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+
+.suggestion-item:hover {
+    background: #856404;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.search-filters {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: var(--shadow);
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.results-count {
+    color: var(--secondary-color);
+    font-weight: 500;
+}
+
+.product-meta {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.category-badge, .stock-badge, .new-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.category-badge {
+    background: var(--info-color);
+    color: white;
+}
+
+.stock-badge.text-success {
+    background: var(--success-color);
+    color: white;
+}
+
+.stock-badge.text-warning {
+    background: var(--warning-color);
+    color: var(--dark-color);
+}
+
+.stock-badge.text-danger {
+    background: var(--danger-color);
+    color: white;
+}
+
+.new-badge {
+    background: #ff6b6b;
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.product-info {
+    display: flex;
+    justify-content: space-between;
+    color: var(--secondary-color);
+    font-size: 0.8rem;
+}
+
+.view-product-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px;
+    font-size: 0.85rem;
+}
+
+.product-unavailable {
+    margin-top: auto;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.out-of-stock, .product-inactive {
+    display: block;
+    padding: 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.out-of-stock {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.product-inactive {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.no-results-section {
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--light-color);
+    border-radius: 8px;
+    margin: 40px 0;
+}
+
+.no-results-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.no-results-section h3 {
+    color: var(--secondary-color);
+    margin-bottom: 15px;
+}
+
+.no-results-section p {
+    color: var(--secondary-color);
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+}
+
+.search-suggestions {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 30px auto;
+    max-width: 500px;
+    text-align: left;
+}
+
+.search-suggestions h4 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.search-suggestions ul {
+    list-style: none;
+    padding: 0;
+}
+
+.search-suggestions li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--secondary-color);
+}
+
+.search-suggestions li:last-child {
+    border-bottom: none;
+}
+
+.search-suggestions li:before {
+    content: '✓ ';
+    color: var(--success-color);
+    font-weight: bold;
+}
+
+.alternative-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+/* Responsive para búsqueda */
+@media (max-width: 768px) {
+    .search-filters .filters-row {
+        flex-direction: column;
+    }
+    
+    .results-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .product-meta {
+        justify-content: center;
+    }
+    
+    .alternative-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .alternative-actions .btn-primary,
+    .alternative-actions .btn-secondary {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+</style>
+
+<script>
+// Incluir todas las funciones de carrito del home.handlebars
+// (Se pueden reutilizar las mismas funciones)
+
+// Función adicional para resaltar términos de búsqueda
+function highlightSearchTerms() {
+    const searchTerm = '{{searchTerm}}';
+    if (!searchTerm) return;
+    
+    const elements = document.querySelectorAll('.product-title, .product-description');
+    elements.forEach(element => {
+        const text = element.innerHTML;
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        element.innerHTML = text.replace(regex, '<mark>$1</mark>');
+    });
+}
+
+// Ejecutar cuando se carga la página
+document.addEventListener('DOMContentLoaded', () => {
+    highlightSearchTerms();
+    initializeCart(); // Función del home
+});
+
+// Agregar helper para highlight en Handlebars (se debe implementar en el servidor)
+// Por ahora, el highlighting se hace en el cliente
+</script>
