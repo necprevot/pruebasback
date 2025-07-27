@@ -21,16 +21,20 @@
     <!-- Productos en el carrito -->
     <div id="cartProducts">
         {{#each cart.products}}
-            <div class="cart-product-item" data-product-id="{{this.product._id}}">
+            <div class="cart-product-item" data-product-id="{{this.product._id}}" data-quantity="{{this.quantity}}" data-price="{{this.product.price}}">
                 <div class="cart-product-card">
                     <div class="cart-product-info">
                         <div class="cart-product-image">
                             {{#if this.product.thumbnails}}
-                                {{#if this.product.thumbnails.0}}
-                                    <img src="{{this.product.thumbnails.0}}" 
-                                         alt="{{this.product.title}}" 
-                                         class="product-image-small" 
-                                         onerror="this.style.display='none';">
+                                {{#if this.product.thumbnails.length}}
+                                    {{#each this.product.thumbnails}}
+                                        {{#if @first}}
+                                            <img src="{{this}}" 
+                                                 alt="{{../product.title}}" 
+                                                 class="product-image-small" 
+                                                 onerror="this.style.display='none';">
+                                        {{/if}}
+                                    {{/each}}
                                 {{else}}
                                     <div class="no-image">📦</div>
                                 {{/if}}
@@ -61,7 +65,8 @@
                                        min="1" 
                                        max="{{this.product.stock}}"
                                        onchange="updateQuantity('{{this.product._id}}', this.value)"
-                                       class="quantity-input">
+                                       class="quantity-input"
+                                       data-product-price="{{this.product.price}}">
                                 <button onclick="updateQuantity('{{this.product._id}}', {{this.quantity}} + 1)" class="btn-quantity">+</button>
                             </div>
                             <small class="stock-info">Stock disponible: {{this.product.stock}}</small>
@@ -86,11 +91,11 @@
         <div class="summary-content">
             <div class="summary-row">
                 <span>Total de productos:</span>
-                <span id="totalItems">{{getTotalItems cart.products}}</span>
+                <span id="totalItems">{{#if totalItems}}{{totalItems}}{{else}}0{{/if}}</span>
             </div>
             <div class="summary-row total-row">
                 <span><strong>Total a pagar:</strong></span>
-                <span id="totalAmount"><strong>${{total}}</strong></span>
+                <span id="totalAmount"><strong>$<span id="calculatedTotal">{{total}}</span></strong></span>
             </div>
         </div>
         
@@ -117,6 +122,69 @@
 <script>
 const cartId = '{{cartId}}';
 
+// Funciones de cálculo
+function calculateTotals() {
+    let totalItems = 0;
+    let totalAmount = 0;
+    
+    // Obtener todos los productos del carrito
+    const productItems = document.querySelectorAll('.cart-product-item');
+    
+    console.log('🧮 Calculando totales...');
+    console.log('📦 Productos encontrados:', productItems.length);
+    
+    productItems.forEach((item, index) => {
+        const quantityInput = item.querySelector('.quantity-input');
+        const price = parseFloat(item.dataset.price);
+        
+        if (quantityInput) {
+            const quantity = parseInt(quantityInput.value) || 0;
+            const subtotal = price * quantity;
+            
+            console.log(`Producto ${index + 1}:`, {
+                quantity,
+                price,
+                subtotal
+            });
+            
+            totalItems += quantity;
+            totalAmount += subtotal;
+            
+            // Actualizar subtotal individual
+            const subtotalElement = item.querySelector(`#subtotal-${item.dataset.productId}`);
+            if (subtotalElement) {
+                subtotalElement.textContent = subtotal;
+            }
+        }
+    });
+    
+    console.log('📊 Totales calculados:', { totalItems, totalAmount });
+    
+    // Actualizar UI
+    const totalItemsElement = document.getElementById('totalItems');
+    const calculatedTotalElement = document.getElementById('calculatedTotal');
+    
+    if (totalItemsElement) {
+        totalItemsElement.textContent = totalItems;
+    }
+    
+    if (calculatedTotalElement) {
+        calculatedTotalElement.textContent = totalAmount;
+    }
+    
+    return { totalItems, totalAmount };
+}
+
+// Ejecutar cálculo al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Página cargada, calculando totales...');
+    
+    // Pequeño delay para asegurar que todo esté renderizado
+    setTimeout(() => {
+        calculateTotals();
+    }, 100);
+});
+
 // Actualizar cantidad de producto
 async function updateQuantity(productId, newQuantity) {
     newQuantity = parseInt(newQuantity);
@@ -124,6 +192,12 @@ async function updateQuantity(productId, newQuantity) {
     if (newQuantity < 1) {
         if (confirm('¿Quieres eliminar este producto del carrito?')) {
             await removeFromCart(productId);
+        } else {
+            // Restaurar valor anterior
+            const quantityInput = document.getElementById(`quantity-${productId}`);
+            if (quantityInput) {
+                quantityInput.value = 1;
+            }
         }
         return;
     }
@@ -138,12 +212,19 @@ async function updateQuantity(productId, newQuantity) {
         });
         
         if (response.ok) {
-            // Actualizar UI sin recargar página
-            await updateCartDisplay();
+            // Recalcular totales inmediatamente
+            calculateTotals();
             showAlert('Cantidad actualizada', 'success');
         } else {
             const error = await response.json();
             showAlert('Error: ' + error.message, 'danger');
+            
+            // Restaurar valor anterior en caso de error
+            const quantityInput = document.getElementById(`quantity-${productId}`);
+            if (quantityInput) {
+                quantityInput.value = quantityInput.defaultValue;
+            }
+            calculateTotals();
         }
     } catch (error) {
         console.error('Error actualizando cantidad:', error);
@@ -212,31 +293,16 @@ async function updateCartDisplay() {
             const data = await response.json();
             const cart = data.cart;
             
-            // Actualizar cantidades y subtotales
+            // Actualizar cantidades en los inputs
             cart.products.forEach(item => {
                 const quantityInput = document.getElementById(`quantity-${item.product._id}`);
-                const subtotalSpan = document.getElementById(`subtotal-${item.product._id}`);
-                
                 if (quantityInput) {
                     quantityInput.value = item.quantity;
                 }
-                
-                if (subtotalSpan) {
-                    subtotalSpan.textContent = item.product.price * item.quantity;
-                }
             });
             
-            // Actualizar total
-            const totalResponse = await fetch(`/api/carts/${cartId}/total`);
-            if (totalResponse.ok) {
-                const totalData = await totalResponse.json();
-                document.getElementById('totalAmount').innerHTML = `<strong>$${totalData.total}</strong>`;
-            }
-            
-            // Actualizar total de items
-            const totalItems = cart.products.reduce((sum, item) => sum + item.quantity, 0);
-            document.getElementById('totalItems').textContent = totalItems;
-            
+            // Recalcular totales después de actualizar
+            calculateTotals();
         }
     } catch (error) {
         console.error('Error actualizando carrito:', error);
@@ -245,6 +311,11 @@ async function updateCartDisplay() {
 
 // Proceder al checkout
 function proceedToCheckout() {
+    const totals = calculateTotals();
+    if (totals.totalItems === 0) {
+        showAlert('El carrito está vacío', 'warning');
+        return;
+    }
     showAlert('Función de checkout en desarrollo', 'info');
     // TODO: Implementar checkout
 }
@@ -275,4 +346,26 @@ function showAlert(message, type) {
         if (alert) alert.remove();
     }, 5000);
 }
+
+// Debug: Mostrar información del carrito en consola
+console.log('🛒 Carrito ID:', cartId);
+console.log('📊 Información de debug disponible en window.cartDebug');
+
+// Función de debug global
+window.cartDebug = function() {
+    const productItems = document.querySelectorAll('.cart-product-item');
+    console.log('=== CART DEBUG INFO ===');
+    console.log('Products found:', productItems.length);
+    
+    productItems.forEach((item, index) => {
+        console.log(`Product ${index + 1}:`, {
+            id: item.dataset.productId,
+            quantity: item.dataset.quantity,
+            price: item.dataset.price,
+            currentInputValue: item.querySelector('.quantity-input')?.value
+        });
+    });
+    
+    return calculateTotals();
+};
 </script>

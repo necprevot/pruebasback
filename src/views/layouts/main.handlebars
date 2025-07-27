@@ -15,7 +15,7 @@
                 <nav>
                     <a href="/">Home</a>
                     <a href="/realtimeproducts">Productos en Tiempo Real</a>
-                    <a href="#" onclick="createNewCart()">🛒 Nuevo Carrito</a>
+                    <a href="#" onclick="goToCart()">🛒 Ver Mi Carrito</a>
                 </nav>
             </div>
         </div>
@@ -28,5 +28,18 @@
     <footer>
         <p>&copy; 2024 BBFermentos - Productos fermentados de calidad</p>
     </footer>
+
+    <script>
+        // Función global para ir al carrito desde cualquier página
+        function goToCart() {
+            const cartId = localStorage.getItem('bbfermentos_cart_id');
+            if (cartId) {
+                window.location.href = `/carts/${cartId}`;
+            } else {
+                alert('No tienes un carrito activo. Ve al inicio para crear uno.');
+                window.location.href = '/';
+            }
+        }
+    </script>
 </body>
 </html>

@@ -5,6 +5,7 @@
     <strong>🛒 Carrito:</strong> <span id="cartCount">0</span> productos | 
     <button id="viewCartBtn" class="btn-primary" style="margin-left: 10px;">Ver Carrito</button>
     <button id="clearCartBtn" class="btn-danger" style="margin-left: 5px;">Limpiar Carrito</button>
+    <button id="newCartBtn" class="btn-secondary" style="margin-left: 5px;">Nuevo Carrito</button>
 </div>
 
 <!-- Alertas -->
@@ -104,15 +105,87 @@
 let currentCartId = null;
 let cartItems = [];
 
+// Funciones de gestión de carrito persistente
+const CartSession = {
+    // Guardar ID del carrito en localStorage
+    save: function(cartId) {
+        localStorage.setItem('bbfermentos_cart_id', cartId);
+        localStorage.setItem('bbfermentos_cart_timestamp', Date.now().toString());
+        console.log('💾 Carrito guardado en sesión:', cartId);
+    },
+    
+    // Obtener ID del carrito desde localStorage
+    get: function() {
+        const cartId = localStorage.getItem('bbfermentos_cart_id');
+        const timestamp = localStorage.getItem('bbfermentos_cart_timestamp');
+        
+        // Verificar si el carrito no es muy antiguo (24 horas)
+        if (cartId && timestamp) {
+            const age = Date.now() - parseInt(timestamp);
+            const maxAge = 24 * 60 * 60 * 1000; // 24 horas
+            
+            if (age < maxAge) {
+                console.log('♻️ Carrito recuperado de sesión:', cartId);
+                return cartId;
+            } else {
+                console.log('⏰ Carrito expirado, creando uno nuevo');
+                this.clear();
+            }
+        }
+        return null;
+    },
+    
+    // Limpiar sesión
+    clear: function() {
+        localStorage.removeItem('bbfermentos_cart_id');
+        localStorage.removeItem('bbfermentos_cart_timestamp');
+        console.log('🗑️ Sesión de carrito limpiada');
+    },
+    
+    // Verificar si existe un carrito en el servidor
+    verify: async function(cartId) {
+        try {
+            const response = await fetch(`/api/carts/${cartId}`);
+            const exists = response.ok;
+            console.log('🔍 Verificación de carrito:', cartId, exists ? '✅' : '❌');
+            return exists;
+        } catch (error) {
+            console.log('❌ Error verificando carrito:', error);
+            return false;
+        }
+    }
+};
+
 // Inicializar carrito al cargar la página
 document.addEventListener('DOMContentLoaded', async () => {
     await initializeCart();
 });
 
-// Inicializar carrito
+// Inicializar carrito con persistencia
 async function initializeCart() {
     try {
-        // Crear un nuevo carrito
+        console.log('🚀 Inicializando carrito...');
+        
+        // Intentar recuperar carrito existente
+        const savedCartId = CartSession.get();
+        
+        if (savedCartId) {
+            // Verificar que el carrito todavía existe en el servidor
+            const cartExists = await CartSession.verify(savedCartId);
+            
+            if (cartExists) {
+                currentCartId = savedCartId;
+                console.log('✅ Usando carrito existente:', currentCartId);
+                await updateCartDisplay();
+                return;
+            } else {
+                console.log('⚠️ Carrito no existe en servidor, creando uno nuevo');
+                CartSession.clear();
+            }
+        }
+        
+        // Crear nuevo carrito si no hay uno válido
+        console.log('🆕 Creando nuevo carrito...');
         const response = await fetch('/api/carts', {
             method: 'POST',
             headers: {
@@ -123,14 +196,24 @@ async function initializeCart() {
         if (response.ok) {
             const data = await response.json();
             currentCartId = data.cart._id;
-            console.log('Carrito inicializado:', currentCartId);
+            CartSession.save(currentCartId);
+            console.log('✅ Nuevo carrito creado:', currentCartId);
             updateCartDisplay();
         } else {
             showAlert('Error al inicializar carrito', 'danger');
         }
     } catch (error) {
-        console.error('Error inicializando carrito:', error);
-        showAlert('Error de conexión', 'danger');
+        console.error('❌ Error inicializando carrito:', error);
+        showAlert('Error de conexión al inicializar carrito', 'danger');
+    }
+}
+
+// Crear nuevo carrito manualmente
+async function createNewCart() {
+    if (confirm('¿Estás seguro de que quieres crear un nuevo carrito? Se perderá el carrito actual.')) {
+        CartSession.clear();
+        await initializeCart();
+        showAlert('Nuevo carrito creado', 'success');
     }
 }
 
@@ -138,6 +221,7 @@ async function initializeCart() {
 async function addToCart(productId, productTitle, productPrice, productStock) {
     if (!currentCartId) {
         showAlert('Error: Carrito no inicializado', 'danger');
+        await initializeCart();
         return;
     }
     
@@ -175,6 +259,9 @@ async function addToCart(productId, productTitle, productPrice, productStock) {
         quantityInput.value = 1; // Reset cantidad
         await updateCartDisplay();
         
+        // Actualizar timestamp de actividad
+        CartSession.save(currentCartId);
+        
     } catch (error) {
         console.error('Error agregando al carrito:', error);
         showAlert('Error al agregar producto: ' + error.message, 'danger');
@@ -196,8 +283,19 @@ async function updateCartDisplay() {
             const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
             document.getElementById('cartCount').textContent = totalItems;
             
+            // Actualizar timestamp si hay actividad
+            if (totalItems > 0) {
+                CartSession.save(currentCartId);
+            }
+            
         } else {
             console.error('Error obteniendo carrito');
+            // Si el carrito no existe, crear uno nuevo
+            if (response.status === 404) {
+                console.log('🔄 Carrito no encontrado, creando uno nuevo');
+                CartSession.clear();
+                await initializeCart();
+            }
         }
     } catch (error) {
         console.error('Error actualizando carrito:', error);
@@ -208,6 +306,15 @@ async function updateCartDisplay() {
 async function viewCart() {
     if (!currentCartId) {
         showAlert('Carrito no inicializado', 'danger');
+        await initializeCart();
+        return;
+    }
+    
+    // Verificar que el carrito existe antes de redirigir
+    const cartExists = await CartSession.verify(currentCartId);
+    if (!cartExists) {
+        showAlert('El carrito no existe, creando uno nuevo...', 'warning');
+        await initializeCart();
         return;
     }
     
@@ -215,57 +322,26 @@ async function viewCart() {
     window.location.href = `/carts/${currentCartId}`;
 }
 
-// Mostrar modal del carrito
-function displayCartModal(cart) {
-    const cartContent = document.getElementById('cartContent');
-    const cartTotal = document.getElementById('cartTotal');
-    
-    if (!cart.products || cart.products.length === 0) {
-        cartContent.innerHTML = '<p style="text-align: center; color: #6c757d;">El carrito está vacío</p>';
-        cartTotal.textContent = '0';
-    } else {
-        let total = 0;
-        let html = '';
-        
-        cart.products.forEach(item => {
-            const subtotal = item.product.price * item.quantity;
-            total += subtotal;
-            
-            html += `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #dee2e6;">
-                    <div style="flex: 1;">
-                        <strong>${item.product.title}</strong><br>
-                        <small>$${item.product.price} c/u</small>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span>Cantidad: ${item.quantity}</span>
-                        <span style="font-weight: bold;">$${subtotal}</span>
-                        <button onclick="removeFromCart('${item.product._id}')" style="background: #dc3545; color: white; border: none; padding: 5px 8px; border-radius: 3px; cursor: pointer;">×</button>
-                    </div>
-                </div>
-            `;
-        });
-        
-        cartContent.innerHTML = html;
-        cartTotal.textContent = total;
-    }
-    
-    document.getElementById('cartModal').style.display = 'block';
-}
-
-// Eliminar del carrito (implementar cuando esté la ruta)
-async function removeFromCart(productId) {
-    showAlert('Función en desarrollo', 'warning');
-    // TODO: Implementar cuando tengas la ruta DELETE
-}
-
 // Limpiar carrito
 async function clearCart() {
     if (!currentCartId) return;
     
     if (confirm('¿Estás seguro de que quieres limpiar el carrito?')) {
-        // TODO: Implementar cuando tengas la ruta para limpiar carrito
-        showAlert('Función en desarrollo', 'warning');
+        try {
+            const response = await fetch(`/api/carts/${currentCartId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                showAlert('Carrito limpiado', 'success');
+                await updateCartDisplay();
+            } else {
+                showAlert('Error al limpiar carrito', 'danger');
+            }
+        } catch (error) {
+            console.error('Error limpiando carrito:', error);
+            showAlert('Error de conexión', 'danger');
+        }
     }
 }
 
@@ -308,6 +384,7 @@ function showAlert(message, type) {
 // Event listeners
 document.getElementById('viewCartBtn').addEventListener('click', viewCart);
 document.getElementById('clearCartBtn').addEventListener('click', clearCart);
+document.getElementById('newCartBtn').addEventListener('click', createNewCart);
 
 // Cerrar modal al hacer click fuera
 document.getElementById('cartModal').addEventListener('click', (e) => {
@@ -315,4 +392,20 @@ document.getElementById('cartModal').addEventListener('click', (e) => {
         closeCartModal();
     }
 });
+
+// Debug: Información del carrito
+console.log('🛒 Sistema de carrito persistente inicializado');
+console.log('📱 Funciones disponibles: CartSession.get(), CartSession.clear()');
+
+// Función global para debug
+window.cartDebug = function() {
+    console.log('=== CART SESSION DEBUG ===');
+    console.log('Current Cart ID:', currentCartId);
+    console.log('Saved Cart ID:', CartSession.get());
+    console.log('Cart Items:', cartItems.length);
+    console.log('LocalStorage:', {
+        cartId: localStorage.getItem('bbfermentos_cart_id'),
+        timestamp: localStorage.getItem('bbfermentos_cart_timestamp')
+    });
+};
 </script>

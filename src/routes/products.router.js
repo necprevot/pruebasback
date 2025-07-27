@@ -92,15 +92,34 @@ router.post('/', async (req, res) => {
 });
 
 //Actualizar producto
+//Actualizar producto - MEJORADO con WebSocket
 router.put("/:pid", async (req, res) => {
     try {
         const { pid } = req.params;
         const updatedData = req.body;
         
+        console.log('🔄 Actualizando producto vía API:', pid, updatedData);
+        
         // Actualizar usando el método corregido
         const updatedProduct = await productManager.updateProductById(pid, updatedData);
-        res.json({ status: "success", product: updatedProduct });
+        
+        // EMITIR WEBSOCKET - Actualizar lista en tiempo real
+        const io = req.app.get('io');
+        if (io) {
+            const products = await productManager.getProducts();
+            io.emit('updateProducts', products);
+            console.log('📡 WebSocket emitido: productos actualizados');
+        }
+        
+        res.json({ 
+            status: "success", 
+            message: "Producto actualizado exitosamente",
+            product: updatedProduct 
+        });
+        
+        console.log('✅ Producto actualizado vía API:', updatedProduct._id);
     } catch (error) {
+        console.error('❌ Error actualizando producto vía API:', error);
         res.status(500).json({ 
             status: "error", 
             message: "Error al actualizar el producto", 

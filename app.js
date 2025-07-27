@@ -51,26 +51,60 @@ app.use(express.static('public')); // Para servir archivos estáticos
 
 console.log('🎨 Configurando Handlebars...');
 // Configuración de Handlebars
+// Fragmento de app.js - Configuración de Handlebars con helpers corregidos
 app.engine('handlebars', engine({
     defaultLayout: 'main',
     layoutsDir: path.join(process.cwd(), 'src/views/layouts'),
     viewsDir: path.join(process.cwd(), 'src/views'),
+    // SOLUCIÓN: Configuración de runtime para permitir acceso a propiedades
+    runtimeOptions: {
+        allowProtoPropertiesByDefault: true,
+        allowProtoMethodsByDefault: true,
+    },
     helpers: {
         // Helper para multiplicar (precio * cantidad)
         multiply: function(a, b) {
             return a * b;
         },
-        // Helper para obtener total de items
+        // Helper para obtener total de items - CORREGIDO
         getTotalItems: function(products) {
-            if (!products || !Array.isArray(products)) return 0;
-            return products.reduce((total, item) => total + item.quantity, 0);
+            console.log('🔢 getTotalItems helper called with:', products);
+            
+            // Verificar si products existe y es un array
+            if (!products) {
+                console.log('❌ Products is null or undefined');
+                return 0;
+            }
+            
+            if (!Array.isArray(products)) {
+                console.log('❌ Products is not an array:', typeof products);
+                return 0;
+            }
+            
+            const total = products.reduce((total, item) => {
+                const quantity = parseInt(item.quantity) || 0;
+                console.log(`📦 Item quantity: ${quantity}`);
+                return total + quantity;
+            }, 0);
+            
+            console.log('✅ Total items calculated by helper:', total);
+            return total;
         },
         // Helper para JSON stringify (para debugging)
         json: function(context) {
             return JSON.stringify(context, null, 2);
+        },
+        // Helper adicional para obtener el primer elemento de un array
+        first: function(array) {
+            return array && array.length > 0 ? array[0] : null;
+        },
+        // Helper para debugging - mostrar tipo de dato
+        debugType: function(data) {
+            console.log('🐛 Debug type:', typeof data, data);
+            return typeof data;
         }
     }
-}));
+    }));
 
 app.set('view engine', 'handlebars');
 app.set('views', path.join(process.cwd(), 'src/views'));
@@ -102,31 +136,78 @@ io.on('connection', (socket) => {
         console.log('👋 Usuario desconectado:', socket.id);
     });
     
+    // AGREGAR PRODUCTO
     socket.on('addProduct', async (productData) => {
         try {
+            console.log('➕ Agregando producto vía WebSocket:', productData);
             const newProduct = await productManager.addProduct(productData);
             const products = await productManager.getProducts();
+            
+            // Emitir a todos los clientes
             io.emit('updateProducts', products);
             socket.emit('productAdded', { success: true, product: newProduct });
+            
+            console.log('✅ Producto agregado exitosamente:', newProduct._id);
         } catch (error) {
             console.error('❌ Error al agregar producto:', error);
             socket.emit('error', { message: error.message });
         }
     });
     
+    // ACTUALIZAR PRODUCTO - NUEVA FUNCIONALIDAD
+    socket.on('updateProduct', async (data) => {
+        try {
+            const { productId, productData } = data;
+            console.log('✏️ Actualizando producto vía WebSocket:', productId, productData);
+            
+            // Validar que se proporcionaron los datos necesarios
+            if (!productId || !productData) {
+                throw new Error('ID del producto y datos son requeridos');
+            }
+            
+            // Actualizar el producto
+            const updatedProduct = await productManager.updateProductById(productId, productData);
+            
+            // Obtener lista actualizada
+            const products = await productManager.getProducts();
+            
+            // Emitir a todos los clientes
+            io.emit('updateProducts', products);
+            socket.emit('productUpdated', { 
+                success: true, 
+                product: updatedProduct,
+                message: 'Producto actualizado exitosamente'
+            });
+            
+            console.log('✅ Producto actualizado exitosamente:', updatedProduct._id);
+        } catch (error) {
+            console.error('❌ Error al actualizar producto:', error);
+            socket.emit('productUpdated', { 
+                success: false, 
+                message: error.message 
+            });
+        }
+    });
+    
+    // ELIMINAR PRODUCTO
     socket.on('deleteProduct', async (productId) => {
         try {
+            console.log('🗑️ Eliminando producto vía WebSocket:', productId);
             await productManager.deleteProductById(productId);
             const products = await productManager.getProducts();
+            
+            // Emitir a todos los clientes
             io.emit('updateProducts', products);
             socket.emit('productDeleted', { success: true, productId });
+            
+            console.log('✅ Producto eliminado exitosamente:', productId);
         } catch (error) {
             console.error('❌ Error al eliminar producto:', error);
             socket.emit('error', { message: error.message });
         }
     });
-});
-
+    });
+    
 console.log('🛡️ Configurando manejo de errores...');
 // Manejo de errores global
 app.use((error, req, res, next) => {
