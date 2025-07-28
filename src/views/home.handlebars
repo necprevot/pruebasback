@@ -133,40 +133,48 @@
     {{#each products}}
     <div class="product-card {{#unless this.status}}product-disabled{{/unless}}">
         <div class="product-header">
-            <div class="product-title">{{this.title}}</div>
+            <div class="product-title">
+                <!-- AGREGAR ENLACE AL TÍTULO -->
+                <a href="/products/{{this._id}}" class="product-title-link">{{this.title}}</a>
+            </div>
             <div class="product-price">${{this.price}}</div>
         </div>
-
+        
         {{#if this.thumbnails.length}}
-        <div class="product-images">
-            {{#each this.thumbnails}}
-            {{#if @first}}
-            <img src="{{this}}" alt="{{../this.title}}" class="product-image" onerror="this.style.display='none';">
-            {{/if}}
-            {{/each}}
-        </div>
+            <div class="product-images">
+                {{#each this.thumbnails}}
+                    {{#if @first}}
+                        <!-- AGREGAR ENLACE A LA IMAGEN -->
+                        <a href="/products/{{../this._id}}">
+                            <img src="{{this}}" alt="{{../this.title}}" class="product-image" onerror="this.style.display='none';">
+                        </a>
+                    {{/if}}
+                {{/each}}
+            </div>
         {{else}}
-        <div class="product-no-image">📦</div>
+            <div class="product-no-image">
+                <a href="/products/{{this._id}}">📦</a>
+            </div>
         {{/if}}
-
+        
         <p class="product-description">{{this.description}}</p>
-
+        
         <div class="product-details">
             <div class="product-info-row">
                 <span class="info-item">
-                    <strong>Stock:</strong>
-                    <span
-                        class="{{#if this.stock}}{{#if (gt this.stock 5)}}text-success{{else}}text-warning{{/if}}{{else}}text-danger{{/if}}">
+                    <strong>Stock:</strong> 
+                    <span class="{{#if this.stock}}{{#if (gt this.stock 5)}}text-success{{else}}text-warning{{/if}}{{else}}text-danger{{/if}}">
                         {{#if this.stock}}{{this.stock}}{{else}}Sin stock{{/if}}
                     </span>
                 </span>
                 <span class="info-item">
-                    <strong>Categoría:</strong> {{this.category}}
+                    <strong>Categoría:</strong> 
+                    <a href="/products?query={{this.category}}" class="category-link">{{this.category}}</a>
                 </span>
             </div>
             <div class="product-info-row">
                 <span class="info-item">
-                    <strong>Estado:</strong>
+                    <strong>Estado:</strong> 
                     <span class="{{#if this.status}}text-success{{else}}text-danger{{/if}}">
                         {{#if this.status}}Activo{{else}}Inactivo{{/if}}
                     </span>
@@ -176,30 +184,51 @@
                 </span>
             </div>
         </div>
-
+        
         <!-- Controles del carrito -->
         {{#if this.status}}
-        {{#if this.stock}}
-        <div class="cart-controls">
-            <div class="quantity-section">
-                <label for="quantity-{{this._id}}">Cantidad:</label>
-                <input type="number" id="quantity-{{this._id}}" min="1" max="{{this.stock}}" value="1"
-                    class="quantity-input">
+            {{#if this.stock}}
+                <div class="cart-controls">
+                    <div class="quantity-section">
+                        <label for="quantity-{{this._id}}">Cantidad:</label>
+                        <input type="number" 
+                               id="quantity-{{this._id}}" 
+                               min="1" 
+                               max="{{this.stock}}" 
+                               value="1" 
+                               class="quantity-input">
+                    </div>
+                    
+                    <!-- BOTONES DE ACCIÓN MEJORADOS -->
+                    <div class="product-actions">
+                        <button onclick="addToCart('{{this._id}}', '{{this.title}}', {{this.price}}, {{this.stock}})" 
+                                class="btn-success add-to-cart-btn">
+                            🛒 Agregar al Carrito
+                        </button>
+                        
+                        <!-- NUEVO BOTÓN PARA VER DETALLES -->
+                        <a href="/products/{{this._id}}" class="btn-info view-details-btn">
+                            👁️ Ver Detalles
+                        </a>
+                    </div>
+                </div>
+            {{else}}
+                <div class="out-of-stock">
+                    <span class="stock-message">Sin stock disponible</span>
+                    <!-- ENLACE PARA VER DETALLES AÚN SIN STOCK -->
+                    <a href="/products/{{this._id}}" class="btn-secondary view-details-btn">
+                        👁️ Ver Detalles
+                    </a>
+                </div>
+            {{/if}}
+        {{else}}
+            <div class="product-inactive">
+                <span class="inactive-message">Producto no disponible</span>
+                <!-- ENLACE PARA VER DETALLES AÚN INACTIVO -->
+                <a href="/products/{{this._id}}" class="btn-secondary view-details-btn">
+                    👁️ Ver Detalles
+                </a>
             </div>
-            <button onclick="addToCart('{{this._id}}', '{{this.title}}', {{this.price}}, {{this.stock}})"
-                class="btn-success add-to-cart-btn">
-                🛒 Agregar al Carrito
-            </button>
-        </div>
-        {{else}}
-        <div class="out-of-stock">
-            <span class="stock-message">Sin stock disponible</span>
-        </div>
-        {{/if}}
-        {{else}}
-        <div class="product-inactive">
-            <span class="inactive-message">Producto no disponible</span>
-        </div>
         {{/if}}
     </div>
     {{/each}}

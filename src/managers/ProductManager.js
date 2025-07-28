@@ -494,16 +494,37 @@ async getProductsConsigna(consignaParams = {}) {
     // Obtener productos relacionados
     async getRelatedProducts(productId, limit = 4) {
         try {
-            const product = await this.getById(productId);
+                    const relatedProducts = await this.model
+            .find({
+                _id: { $ne: productId },
+                category: product.category,
+                status: true,
+                stock: { $gt: 0 } // Solo productos con stock
+            })
+            .sort({ createdAt: -1 }) // Más recientes primero
+            .limit(limit)
+            .lean();
+        
+        // Si no hay suficientes productos de la misma categoría, completar con otros productos
+        if (relatedProducts.length < limit) {
+            const remainingLimit = limit - relatedProducts.length;
+            const relatedIds = relatedProducts.map(p => p._id);
             
-            return await this.model
+            const additionalProducts = await this.model
                 .find({
-                    _id: { $ne: productId },
-                    category: product.category,
-                    status: true
+                    _id: { $nin: [productId, ...relatedIds] },
+                    status: true,
+                    stock: { $gt: 0 }
                 })
-                .limit(limit)
+                .sort({ createdAt: -1 })
+                .limit(remainingLimit)
                 .lean();
+            
+            relatedProducts.push(...additionalProducts);
+        }
+        
+        return relatedProducts;
+        
         } catch (error) {
             throw new Error(`Error al obtener productos relacionados: ${error.message}`);
         }
@@ -737,6 +758,6 @@ async getProductsConsigna(consignaParams = {}) {
         }
     }
 
-} // <-- UNA SOLA LLAVE DE CIERRE DE LA CLASE
+}
 
 export default ProductManager;

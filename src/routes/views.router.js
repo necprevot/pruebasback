@@ -417,5 +417,90 @@ router.get('/admin', async (req, res) => {
         });
     }
 });
+router.get('/products/:pid', async (req, res) => {
+    try {
+        const { pid } = req.params;
+        console.log('🔍 Cargando producto individual:', pid);
+        
+        // VALIDAR FORMATO DE ID ANTES DE CONSULTAR LA BASE DE DATOS
+        if (!pid || !/^[0-9a-fA-F]{24}$/.test(pid)) {
+            console.log('❌ ID inválido:', pid);
+            return res.status(400).render('error', {
+                title: 'ID de producto inválido',
+                status: 400,
+                message: 'El ID del producto no tiene un formato válido',
+                url: req.originalUrl,
+                backUrl: '/products'
+            });
+        }
+        
+        // Obtener el producto específico
+        const product = await productManager.getProductById(pid);
+        console.log('✅ Producto encontrado:', product.title);
+        
+        // Obtener productos relacionados (misma categoría)
+        let relatedProducts = [];
+        try {
+            relatedProducts = await productManager.getRelatedProducts(pid, 4);
+            console.log('📦 Productos relacionados encontrados:', relatedProducts.length);
+        } catch (error) {
+            console.log('⚠️ No se pudieron obtener productos relacionados:', error.message);
+            relatedProducts = [];
+        }
+
+        // Obtener categorías para navegación
+        let categories = [];
+        try {
+            categories = await productManager.getCategories();
+        } catch (error) {
+            categories = [];
+        }
+
+        res.render('productDetail', {
+            title: product.title,
+            product,
+            relatedProducts,
+            categories,
+            breadcrumb: {
+                category: product.category,
+                title: product.title
+            },
+            // Datos para el carrito
+            cartData: {
+                productId: product._id,
+                productTitle: product.title,
+                productPrice: product.price,
+                productStock: product.stock,
+                productStatus: product.status
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error obteniendo producto:', error);
+        
+        // Determinar el tipo de error y renderizar apropiadamente
+        let status = 500;
+        let title = 'Error del servidor';
+        let message = error.message;
+        
+        if (error.message.includes('no encontrado') || error.message.includes('not found')) {
+            status = 404;
+            title = 'Producto no encontrado';
+            message = 'El producto que buscas no existe o ha sido eliminado';
+        } else if (error.message.includes('ID inválido') || error.message.includes('CastError')) {
+            status = 400;
+            title = 'ID de producto inválido';
+            message = 'El ID del producto no tiene un formato válido';
+        }
+        
+        res.status(status).render('error', {
+            title,
+            status,
+            message,
+            url: req.originalUrl,
+            backUrl: '/products'
+        });
+    }
+});
 
 export default router;
