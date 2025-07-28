@@ -9,25 +9,22 @@ router.get("/", async (req, res) => {
     try {
         console.log('📥 Parámetros recibidos en GET /api/products:', req.query);
 
-        // Extraer parámetros según la consigna específica
         const {
-            limit = 10,    // default 10 según consigna
-            page = 1,      // default 1 según consigna
-            sort,          // asc/desc para precio según consigna
-            query          // filtro según consigna
+            limit = 10,
+            page = 1,
+            sort,
+            query
         } = req.query;
 
-        console.log('⚙️ Parámetros procesados según consigna:', { limit, page, sort, query });
 
-        console.log('🎯 Parámetros para ProductManager.getProductsConsigna:', {
+        console.log('🎯 Parámetros para ProductManager.getProducts:', {
             page: parseInt(page),
             limit: parseInt(limit),
             sort,
             query
         });
 
-        // Obtener productos usando el nuevo método para la consigna
-        const result = await productManager.getProductsConsigna({
+        const result = await productManager.getProducts({
             page: parseInt(page),
             limit: parseInt(limit),
             sort,
@@ -41,7 +38,6 @@ router.get("/", async (req, res) => {
             totalPages: result.totalPages
         });
 
-        // FORMATEAR RESPUESTA SEGÚN CONSIGNA EXACTA
         const response = {
             status: "success",
             payload: result.payload,
@@ -55,7 +51,7 @@ router.get("/", async (req, res) => {
             nextLink: result.nextLink
         };
 
-        console.log('📤 Respuesta formateada según consigna:', {
+        console.log('📤 Respuesta formateada:', {
             status: response.status,
             payloadCount: response.payload.length,
             totalPages: response.totalPages,
@@ -71,7 +67,6 @@ router.get("/", async (req, res) => {
     } catch (error) {
         console.error('❌ Error en GET /api/products:', error);
 
-        // Respuesta de error según el formato de la consigna
         res.status(500).json({
             status: "error",
             payload: [],
@@ -377,13 +372,17 @@ router.post('/:pid/delete', async (req, res) => {
 
 router.get("/filters", async (req, res) => {
     try {
-        const filtersData = await productManager.getCategoriesForConsigna();
+        const filtersData = await productManager.getCategories();
 
         res.json({
             status: "success",
             filters: {
-                categories: filtersData.categories,
-                availability: filtersData.availabilityFilters,
+                categories: filtersData,
+                availability: [
+                    { value: 'available', label: 'Disponibles' },
+                    { value: 'outOfStock', label: 'Sin Stock' },
+                    { value: 'lowStock', label: 'Stock Bajo' }
+                ],
                 sortOptions: [
                     { value: 'asc', label: 'Precio: Menor a Mayor' },
                     { value: 'desc', label: 'Precio: Mayor a Menor' }
@@ -400,7 +399,6 @@ router.get("/filters", async (req, res) => {
     }
 });
 
-// GET /api/products/test - Endpoint para probar diferentes combinaciones según consigna
 router.get("/test", async (req, res) => {
     try {
         const examples = [
@@ -453,10 +451,10 @@ router.get("/test", async (req, res) => {
 
         res.json({
             status: "success",
-            message: "Ejemplos de uso del endpoint GET /api/products según consigna",
+            message: "Ejemplos de uso del endpoint GET /api/products",
             examples,
             currentParams: req.query,
-            note: "Estos son ejemplos de cómo usar el endpoint principal según la consigna"
+            note: "Estos son ejemplos de cómo usar el endpoint principal"
         });
 
     } catch (error) {

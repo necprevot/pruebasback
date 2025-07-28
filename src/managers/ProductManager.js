@@ -214,27 +214,35 @@ class ProductManager extends BaseManager {
     }
 
     // Construir enlaces de paginación
-    _buildLink(options, page) {
+_buildLink(options, page) {
     const params = new URLSearchParams();
     
-    // Agregar página (solo si no es la página 1)
+    // Agregar página
     if (page && page !== 1) {
         params.set('page', page.toString());
     }
     
-    // Agregar límite (solo si no es el default de 10)
+    // Agregar límite
     if (options.limit && options.limit !== 10) {
         params.set('limit', options.limit.toString());
     }
     
-    // Agregar sort (solo si está definido)
-    if (options.sort === 'asc' || options.sort === 'desc') {
+    // Agregar ordenamiento
+    if (options.sort) {
         params.set('sort', options.sort);
     }
     
-    // Agregar query (solo si está definido)
-    if (options.query && options.query.trim()) {
-        params.set('query', options.query.trim());
+    // Agregar filtros
+    if (options.category && options.category !== 'all') {
+        params.set('category', options.category);
+    }
+    
+    if (options.search && options.search.trim()) {
+        params.set('search', options.search.trim());
+    }
+    
+    if (options.availability && options.availability !== 'all') {
+        params.set('availability', options.availability);
     }
 
     const queryString = params.toString();
@@ -242,188 +250,6 @@ class ProductManager extends BaseManager {
     
     return queryString ? `${baseUrl}?${queryString}` : baseUrl;
 }
-
-_buildQueryFromConsignaParams(consignaParams) {
-    const query = {};
-    
-    // Procesar parámetro 'query' de la consigna
-    if (consignaParams.query && consignaParams.query.trim()) {
-        const queryValue = consignaParams.query.trim();
-        
-        console.log('🔍 Procesando parámetro query:', queryValue);
-        
-        // OPCIÓN 1: Filtros de disponibilidad específicos
-        if (queryValue === 'available') {
-            query.stock = { $gt: 0 };
-            query.status = true;
-            console.log('📦 Filtro aplicado: productos disponibles');
-        } 
-        else if (queryValue === 'outOfStock') {
-            query.stock = { $lte: 0 };
-            console.log('📦 Filtro aplicado: productos sin stock');
-        }
-        else if (queryValue === 'lowStock') {
-            query.stock = { $gt: 0, $lte: 5 };
-            console.log('📦 Filtro aplicado: productos con stock bajo');
-        }
-        else if (queryValue === 'inStock') {
-            query.stock = { $gt: 0 };
-            console.log('📦 Filtro aplicado: productos en stock');
-        }
-        // OPCIÓN 2: Filtros por estado
-        else if (queryValue === 'active') {
-            query.status = true;
-            console.log('📦 Filtro aplicado: productos activos');
-        }
-        else if (queryValue === 'inactive') {
-            query.status = false;
-            console.log('📦 Filtro aplicado: productos inactivos');
-        }
-        // OPCIÓN 3: Buscar por categoría (caso por defecto)
-        else {
-            // Buscar tanto en categoría como en título/descripción para mayor flexibilidad
-            const searchRegex = new RegExp(queryValue, 'i');
-            query.$or = [
-                { category: searchRegex },
-                { title: searchRegex },
-                { description: searchRegex }
-            ];
-            console.log('📂 Filtro aplicado: búsqueda en categoría/título/descripción:', queryValue);
-        }
-    }
-    
-    return query;
-}
-
-async getProductsConsigna(consignaParams = {}) {
-    try {
-        const {
-            page = 1,
-            limit = 10,
-            sort,
-            query
-        } = consignaParams;
-
-        console.log('🚀 getProductsConsigna iniciado con parámetros:', consignaParams);
-
-        // Validar parámetros de entrada
-        const pageNum = Math.max(1, parseInt(page));
-        const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
-        
-        console.log('✅ Parámetros validados:', {
-            page: pageNum,
-            limit: limitNum,
-            sort,
-            query
-        });
-
-        // Construir query de filtros según consigna
-        const mongoQuery = this._buildQueryFromConsignaParams({ query });
-        console.log('📋 MongoDB Query construido:', JSON.stringify(mongoQuery, null, 2));
-
-        // Construir opciones de ordenamiento según consigna
-        let sortOptions = {};
-        if (sort === 'asc') {
-            sortOptions.price = 1;
-            console.log('📊 Ordenamiento: precio ascendente');
-        } else if (sort === 'desc') {
-            sortOptions.price = -1;
-            console.log('📊 Ordenamiento: precio descendente');
-        } else {
-            // Sin ordenamiento específico, usar orden por defecto
-            sortOptions = { status: -1, title: 1 }; // Activos primero, luego por título
-            console.log('📊 Ordenamiento por defecto: status desc, title asc');
-        }
-
-        const skip = (pageNum - 1) * limitNum;
-        console.log('📄 Paginación:', { skip, limit: limitNum });
-
-        // Ejecutar consulta con paginación
-        console.log('⏳ Ejecutando consulta a MongoDB...');
-        const [products, totalDocs] = await Promise.all([
-            this.model
-                .find(mongoQuery)
-                .sort(sortOptions)
-                .skip(skip)
-                .limit(limitNum)
-                .lean(true),
-            this.model.countDocuments(mongoQuery)
-        ]);
-
-        console.log('📊 Resultados de la consulta:', {
-            productosEncontrados: products.length,
-            totalDocumentos: totalDocs
-        });
-
-        // Calcular información de paginación
-        const totalPages = Math.ceil(totalDocs / limitNum);
-        const hasNextPage = pageNum < totalPages;
-        const hasPrevPage = pageNum > 1;
-        const nextPage = hasNextPage ? pageNum + 1 : null;
-        const prevPage = hasPrevPage ? pageNum - 1 : null;
-
-        // Construir links según consigna
-        const baseOptions = { 
-            limit: limitNum !== 10 ? limitNum : undefined, // Solo incluir si no es el default
-            sort, 
-            query 
-        };
-        
-        const prevLink = hasPrevPage ? this._buildLink(baseOptions, prevPage) : null;
-        const nextLink = hasNextPage ? this._buildLink(baseOptions, nextPage) : null;
-
-        const result = {
-            status: 'success',
-            payload: products,
-            totalPages,
-            prevPage,
-            nextPage,
-            page: pageNum,
-            hasPrevPage,
-            hasNextPage,
-            prevLink,
-            nextLink
-        };
-
-        console.log('✅ Respuesta preparada:', {
-            status: result.status,
-            payloadCount: result.payload.length,
-            totalPages: result.totalPages,
-            page: result.page,
-            hasPrevPage: result.hasPrevPage,
-            hasNextPage: result.hasNextPage,
-            prevLink: result.prevLink,
-            nextLink: result.nextLink
-        });
-
-        return result;
-
-    } catch (error) {
-        console.error('❌ Error en getProductsConsigna:', error);
-        throw new Error(`Error al obtener productos según consigna: ${error.message}`);
-    }
-}
-
-    // Obtener categorías disponibles
-   async getCategoriesForConsigna() {
-    try {
-        const categories = await this.model.distinct('category');
-        return {
-            categories: categories.filter(cat => cat).sort(),
-            availabilityFilters: [
-                { value: 'available', label: 'Disponibles' },
-                { value: 'outOfStock', label: 'Sin Stock' },
-                { value: 'lowStock', label: 'Stock Bajo' },
-                { value: 'inStock', label: 'En Stock' },
-                { value: 'active', label: 'Activos' },
-                { value: 'inactive', label: 'Inactivos' }
-            ]
-        };
-    } catch (error) {
-        throw new Error(`Error al obtener categorías: ${error.message}`);
-    }
-}
-
     // Obtener estadísticas de productos
     async getProductStats() {
         try {
