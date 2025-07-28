@@ -561,11 +561,18 @@ const productManager = new ProductManager();
 io.on('connection', (socket) => {
     console.log('👤 Usuario conectado:', socket.id);
     
-    // Enviar productos actuales al cliente recién conectado
-    productManager.getProducts().then(products => {
-        socket.emit('updateProducts', products);
+    // FIX: Enviar solo el array de productos, no el objeto completo
+    productManager.getProducts({ limit: 100 }).then(result => {
+        console.log('📡 Enviando productos al cliente:', {
+            count: result.payload.length,
+            total: result.totalDocs,
+            isArray: Array.isArray(result.payload)
+        });
+        
+        // CORRECCIÓN: Enviar result.payload (el array), no result
+        socket.emit('updateProducts', result.payload);
     }).catch(error => {
-        console.error('❌ Error al obtener productos:', error);
+        console.error('❌ Error al obtener productos para WebSocket:', error);
         socket.emit('error', { message: 'Error al cargar productos' });
     });
     
@@ -578,10 +585,12 @@ io.on('connection', (socket) => {
         try {
             console.log('➕ Agregando producto vía WebSocket:', productData);
             const newProduct = await productManager.addProduct(productData);
-            const products = await productManager.getProducts();
             
-            // Emitir a todos los clientes
-            io.emit('updateProducts', products);
+            // FIX: Enviar solo el array de productos
+            const result = await productManager.getProducts({ limit: 100 });
+            
+            // CORRECCIÓN: Enviar result.payload, no result
+            io.emit('updateProducts', result.payload);
             socket.emit('productAdded', { success: true, product: newProduct });
             
             console.log('✅ Producto agregado exitosamente:', newProduct._id);
@@ -591,25 +600,23 @@ io.on('connection', (socket) => {
         }
     });
     
-    // ACTUALIZAR PRODUCTO - NUEVA FUNCIONALIDAD
+    // ACTUALIZAR PRODUCTO
     socket.on('updateProduct', async (data) => {
         try {
             const { productId, productData } = data;
             console.log('✏️ Actualizando producto vía WebSocket:', productId, productData);
             
-            // Validar que se proporcionaron los datos necesarios
             if (!productId || !productData) {
                 throw new Error('ID del producto y datos son requeridos');
             }
             
-            // Actualizar el producto
             const updatedProduct = await productManager.updateProductById(productId, productData);
             
-            // Obtener lista actualizada
-            const products = await productManager.getProducts();
+            // FIX: Enviar solo el array de productos
+            const result = await productManager.getProducts({ limit: 100 });
             
-            // Emitir a todos los clientes
-            io.emit('updateProducts', products);
+            // CORRECCIÓN: Enviar result.payload, no result
+            io.emit('updateProducts', result.payload);
             socket.emit('productUpdated', { 
                 success: true, 
                 product: updatedProduct,
@@ -631,10 +638,12 @@ io.on('connection', (socket) => {
         try {
             console.log('🗑️ Eliminando producto vía WebSocket:', productId);
             await productManager.deleteProductById(productId);
-            const products = await productManager.getProducts();
             
-            // Emitir a todos los clientes
-            io.emit('updateProducts', products);
+            // FIX: Enviar solo el array de productos
+            const result = await productManager.getProducts({ limit: 100 });
+            
+            // CORRECCIÓN: Enviar result.payload, no result
+            io.emit('updateProducts', result.payload);
             socket.emit('productDeleted', { success: true, productId });
             
             console.log('✅ Producto eliminado exitosamente:', productId);
@@ -643,7 +652,8 @@ io.on('connection', (socket) => {
             socket.emit('error', { message: error.message });
         }
     });
-    });
+});
+
 
 console.log('🛡️ Configurando manejo de errores...');
 // Manejo de errores global

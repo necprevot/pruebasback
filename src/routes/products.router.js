@@ -7,53 +7,82 @@ const productManager = new ProductManager();
 // GET /api/products - Obtener productos con filtros, paginación y ordenamiento
 router.get("/", async (req, res) => {
     try {
-        console.log('📥 Parámetros recibidos:', req.query);
+        console.log('📥 Parámetros recibidos en GET /api/products:', req.query);
 
-        // Extraer y validar parámetros
+        // Extraer parámetros según la consigna específica
         const {
-            page = 1,
-            limit = 10,
-            category,
-            status,
-            minPrice,
-            maxPrice,
-            search,
-            availability,
-            sort
+            limit = 10,    // default 10 según consigna
+            page = 1,      // default 1 según consigna
+            sort,          // asc/desc para precio según consigna
+            query          // filtro según consigna
         } = req.query;
 
-        // Construir opciones para el manager
-        const options = {
+        console.log('⚙️ Parámetros procesados según consigna:', { limit, page, sort, query });
+
+        console.log('🎯 Parámetros para ProductManager.getProductsConsigna:', {
             page: parseInt(page),
             limit: parseInt(limit),
-            category,
-            status,
-            minPrice: minPrice ? parseFloat(minPrice) : undefined,
-            maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
-            search,
-            availability,
-            sort
-        };
+            sort,
+            query
+        });
 
-        console.log('⚙️ Opciones procesadas:', options);
+        // Obtener productos usando el nuevo método para la consigna
+        const result = await productManager.getProductsConsigna({
+            page: parseInt(page),
+            limit: parseInt(limit),
+            sort,
+            query
+        });
 
-        // Obtener productos con el nuevo método
-        const result = await productManager.getProducts(options);
-
-        console.log('✅ Resultado obtenido:', {
+        console.log('✅ Resultado obtenido del manager:', {
             productsCount: result.payload.length,
             totalDocs: result.totalDocs,
             page: result.page,
             totalPages: result.totalPages
         });
 
-        res.json(result);
+        // FORMATEAR RESPUESTA SEGÚN CONSIGNA EXACTA
+        const response = {
+            status: "success",
+            payload: result.payload,
+            totalPages: result.totalPages,
+            prevPage: result.prevPage,
+            nextPage: result.nextPage,
+            page: result.page,
+            hasPrevPage: result.hasPrevPage,
+            hasNextPage: result.hasNextPage,
+            prevLink: result.prevLink,
+            nextLink: result.nextLink
+        };
+
+        console.log('📤 Respuesta formateada según consigna:', {
+            status: response.status,
+            payloadCount: response.payload.length,
+            totalPages: response.totalPages,
+            page: response.page,
+            hasPrevPage: response.hasPrevPage,
+            hasNextPage: response.hasNextPage,
+            prevLink: response.prevLink,
+            nextLink: response.nextLink
+        });
+
+        res.json(response);
 
     } catch (error) {
         console.error('❌ Error en GET /api/products:', error);
+        
+        // Respuesta de error según el formato de la consigna
         res.status(500).json({
             status: "error",
-            message: "Error al obtener los productos",
+            payload: [],
+            totalPages: 0,
+            prevPage: null,
+            nextPage: null,
+            page: 1,
+            hasPrevPage: false,
+            hasNextPage: false,
+            prevLink: null,
+            nextLink: null,
             error: error.message
         });
     }
@@ -330,6 +359,99 @@ router.post('/:pid/delete', async (req, res) => {
             title: 'Productos en Tiempo Real',
             products: products,
             error: `Error al eliminar producto: ${error.message}`
+        });
+    }
+});
+
+router.get("/filters", async (req, res) => {
+    try {
+        const filtersData = await productManager.getCategoriesForConsigna();
+        
+        res.json({
+            status: "success",
+            filters: {
+                categories: filtersData.categories,
+                availability: filtersData.availabilityFilters,
+                sortOptions: [
+                    { value: 'asc', label: 'Precio: Menor a Mayor' },
+                    { value: 'desc', label: 'Precio: Mayor a Menor' }
+                ]
+            }
+        });
+    } catch (error) {
+        console.error('❌ Error obteniendo filtros:', error);
+        res.status(500).json({
+            status: "error",
+            message: "Error al obtener filtros disponibles",
+            error: error.message
+        });
+    }
+});
+
+// GET /api/products/test - Endpoint para probar diferentes combinaciones según consigna
+router.get("/test", async (req, res) => {
+    try {
+        const examples = [
+            {
+                description: "Básico - defaults",
+                url: "/api/products",
+                params: {}
+            },
+            {
+                description: "Con límite",
+                url: "/api/products?limit=5",
+                params: { limit: 5 }
+            },
+            {
+                description: "Página 2",
+                url: "/api/products?page=2", 
+                params: { page: 2 }
+            },
+            {
+                description: "Ordenar por precio ascendente",
+                url: "/api/products?sort=asc",
+                params: { sort: "asc" }
+            },
+            {
+                description: "Ordenar por precio descendente", 
+                url: "/api/products?sort=desc",
+                params: { sort: "desc" }
+            },
+            {
+                description: "Filtrar productos disponibles",
+                url: "/api/products?query=available",
+                params: { query: "available" }
+            },
+            {
+                description: "Filtrar productos sin stock",
+                url: "/api/products?query=outOfStock", 
+                params: { query: "outOfStock" }
+            },
+            {
+                description: "Filtrar por categoría",
+                url: "/api/products?query=ofertas",
+                params: { query: "ofertas" }
+            },
+            {
+                description: "Combinación completa",
+                url: "/api/products?limit=3&page=1&sort=desc&query=available",
+                params: { limit: 3, page: 1, sort: "desc", query: "available" }
+            }
+        ];
+
+        res.json({
+            status: "success",
+            message: "Ejemplos de uso del endpoint GET /api/products según consigna",
+            examples,
+            currentParams: req.query,
+            note: "Estos son ejemplos de cómo usar el endpoint principal según la consigna"
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            status: "error", 
+            message: "Error en endpoint de prueba",
+            error: error.message
         });
     }
 });

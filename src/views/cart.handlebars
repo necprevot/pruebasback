@@ -1,7 +1,7 @@
 <div class="cart-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--border-color);">
     <h2>🛒 Carrito: {{cartId}}</h2>
     <div class="cart-actions">
-        <a href="/" class="btn-secondary" style="text-decoration: none; margin-right: 10px;">← Seguir Comprando</a>
+        <a href="/products" class="btn-secondary" style="text-decoration: none; margin-right: 10px;">← Seguir Comprando</a>
         {{#if hasProducts}}
             <button onclick="clearCart()" class="btn-danger">Vaciar Carrito</button>
         {{/if}}
@@ -115,7 +115,7 @@
         <div class="empty-cart-icon">🛒</div>
         <h3>Tu carrito está vacío</h3>
         <p>No hay productos en este carrito. ¡Agrega algunos productos para comenzar!</p>
-        <a href="/" class="btn-primary">🛍️ Ir de Compras</a>
+        <a href="/products" class="btn-primary">🛍️ Ir de Compras</a>
     </div>
 {{/if}}
 

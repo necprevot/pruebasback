@@ -215,45 +215,234 @@ class ProductManager extends BaseManager {
 
     // Construir enlaces de paginación
     _buildLink(options, page) {
-        const params = new URLSearchParams();
-        
-        // Agregar todos los parámetros relevantes
-        if (page) params.set('page', page);
-        if (options.limit) params.set('limit', options.limit);
-        if (options.category && options.category !== 'all') params.set('category', options.category);
-        if (options.status !== undefined && options.status !== 'all') params.set('status', options.status);
-        if (options.minPrice) params.set('minPrice', options.minPrice);
-        if (options.maxPrice) params.set('maxPrice', options.maxPrice);
-        if (options.search) params.set('search', options.search);
-        if (options.availability && options.availability !== 'all') params.set('availability', options.availability);
-        if (options.sort) params.set('sort', options.sort);
-
-        return params.toString() ? `?${params.toString()}` : '';
+    const params = new URLSearchParams();
+    
+    // Agregar página (solo si no es la página 1)
+    if (page && page !== 1) {
+        params.set('page', page.toString());
+    }
+    
+    // Agregar límite (solo si no es el default de 10)
+    if (options.limit && options.limit !== 10) {
+        params.set('limit', options.limit.toString());
+    }
+    
+    // Agregar sort (solo si está definido)
+    if (options.sort === 'asc' || options.sort === 'desc') {
+        params.set('sort', options.sort);
+    }
+    
+    // Agregar query (solo si está definido)
+    if (options.query && options.query.trim()) {
+        params.set('query', options.query.trim());
     }
 
-    // Método de compatibilidad para el código existente
-    async getProductsLegacy(limit = null) {
-        try {
-            const options = {};
-            if (limit) options.limit = limit;
-            
-            const result = await this.getProducts(options);
-            return result.payload; // Retornar solo los productos para mantener compatibilidad
-        } catch (error) {
-            console.error('Error en getProductsLegacy:', error);
-            throw error;
+    const queryString = params.toString();
+    const baseUrl = '/api/products';
+    
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+}
+
+_buildQueryFromConsignaParams(consignaParams) {
+    const query = {};
+    
+    // Procesar parámetro 'query' de la consigna
+    if (consignaParams.query && consignaParams.query.trim()) {
+        const queryValue = consignaParams.query.trim();
+        
+        console.log('🔍 Procesando parámetro query:', queryValue);
+        
+        // OPCIÓN 1: Filtros de disponibilidad específicos
+        if (queryValue === 'available') {
+            query.stock = { $gt: 0 };
+            query.status = true;
+            console.log('📦 Filtro aplicado: productos disponibles');
+        } 
+        else if (queryValue === 'outOfStock') {
+            query.stock = { $lte: 0 };
+            console.log('📦 Filtro aplicado: productos sin stock');
+        }
+        else if (queryValue === 'lowStock') {
+            query.stock = { $gt: 0, $lte: 5 };
+            console.log('📦 Filtro aplicado: productos con stock bajo');
+        }
+        else if (queryValue === 'inStock') {
+            query.stock = { $gt: 0 };
+            console.log('📦 Filtro aplicado: productos en stock');
+        }
+        // OPCIÓN 2: Filtros por estado
+        else if (queryValue === 'active') {
+            query.status = true;
+            console.log('📦 Filtro aplicado: productos activos');
+        }
+        else if (queryValue === 'inactive') {
+            query.status = false;
+            console.log('📦 Filtro aplicado: productos inactivos');
+        }
+        // OPCIÓN 3: Buscar por categoría (caso por defecto)
+        else {
+            // Buscar tanto en categoría como en título/descripción para mayor flexibilidad
+            const searchRegex = new RegExp(queryValue, 'i');
+            query.$or = [
+                { category: searchRegex },
+                { title: searchRegex },
+                { description: searchRegex }
+            ];
+            console.log('📂 Filtro aplicado: búsqueda en categoría/título/descripción:', queryValue);
         }
     }
+    
+    return query;
+}
+
+async getProductsConsigna(consignaParams = {}) {
+    try {
+        const {
+            page = 1,
+            limit = 10,
+            sort,
+            query
+        } = consignaParams;
+
+        console.log('🚀 getProductsConsigna iniciado con parámetros:', consignaParams);
+
+        // Validar parámetros de entrada
+        const pageNum = Math.max(1, parseInt(page));
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+        
+        console.log('✅ Parámetros validados:', {
+            page: pageNum,
+            limit: limitNum,
+            sort,
+            query
+        });
+
+        // Construir query de filtros según consigna
+        const mongoQuery = this._buildQueryFromConsignaParams({ query });
+        console.log('📋 MongoDB Query construido:', JSON.stringify(mongoQuery, null, 2));
+
+        // Construir opciones de ordenamiento según consigna
+        let sortOptions = {};
+        if (sort === 'asc') {
+            sortOptions.price = 1;
+            console.log('📊 Ordenamiento: precio ascendente');
+        } else if (sort === 'desc') {
+            sortOptions.price = -1;
+            console.log('📊 Ordenamiento: precio descendente');
+        } else {
+            // Sin ordenamiento específico, usar orden por defecto
+            sortOptions = { status: -1, title: 1 }; // Activos primero, luego por título
+            console.log('📊 Ordenamiento por defecto: status desc, title asc');
+        }
+
+        const skip = (pageNum - 1) * limitNum;
+        console.log('📄 Paginación:', { skip, limit: limitNum });
+
+        // Ejecutar consulta con paginación
+        console.log('⏳ Ejecutando consulta a MongoDB...');
+        const [products, totalDocs] = await Promise.all([
+            this.model
+                .find(mongoQuery)
+                .sort(sortOptions)
+                .skip(skip)
+                .limit(limitNum)
+                .lean(true),
+            this.model.countDocuments(mongoQuery)
+        ]);
+
+        console.log('📊 Resultados de la consulta:', {
+            productosEncontrados: products.length,
+            totalDocumentos: totalDocs
+        });
+
+        // Calcular información de paginación
+        const totalPages = Math.ceil(totalDocs / limitNum);
+        const hasNextPage = pageNum < totalPages;
+        const hasPrevPage = pageNum > 1;
+        const nextPage = hasNextPage ? pageNum + 1 : null;
+        const prevPage = hasPrevPage ? pageNum - 1 : null;
+
+        // Construir links según consigna
+        const baseOptions = { 
+            limit: limitNum !== 10 ? limitNum : undefined, // Solo incluir si no es el default
+            sort, 
+            query 
+        };
+        
+        const prevLink = hasPrevPage ? this._buildLink(baseOptions, prevPage) : null;
+        const nextLink = hasNextPage ? this._buildLink(baseOptions, nextPage) : null;
+
+        const result = {
+            status: 'success',
+            payload: products,
+            totalPages,
+            prevPage,
+            nextPage,
+            page: pageNum,
+            hasPrevPage,
+            hasNextPage,
+            prevLink,
+            nextLink
+        };
+
+        console.log('✅ Respuesta preparada:', {
+            status: result.status,
+            payloadCount: result.payload.length,
+            totalPages: result.totalPages,
+            page: result.page,
+            hasPrevPage: result.hasPrevPage,
+            hasNextPage: result.hasNextPage,
+            prevLink: result.prevLink,
+            nextLink: result.nextLink
+        });
+
+        return result;
+
+    } catch (error) {
+        console.error('❌ Error en getProductsConsigna:', error);
+        throw new Error(`Error al obtener productos según consigna: ${error.message}`);
+    }
+}
+    // Método de compatibilidad para el código existente
+ async getProductsLegacy(limit = null) {
+    try {
+        console.log('🔄 getProductsLegacy llamado con limit:', limit);
+        
+        const options = { 
+            page: 1,
+            limit: limit || 100, // Por defecto 100 productos
+            status: undefined // Incluir todos los productos
+        };
+        
+        const result = await this.getProducts(options);
+        console.log('✅ getProductsLegacy retornando:', result.payload.length, 'productos');
+        
+        return result.payload; // Retornar solo los productos para mantener compatibilidad
+    } catch (error) {
+        console.error('❌ Error en getProductsLegacy:', error);
+        throw error;
+    }
+}
 
     // Obtener categorías disponibles
-    async getCategories() {
-        try {
-            const categories = await this.model.distinct('category');
-            return categories.filter(cat => cat).sort();
-        } catch (error) {
-            throw new Error(`Error al obtener categorías: ${error.message}`);
-        }
+   async getCategoriesForConsigna() {
+    try {
+        const categories = await this.model.distinct('category');
+        return {
+            categories: categories.filter(cat => cat).sort(),
+            availabilityFilters: [
+                { value: 'available', label: 'Disponibles' },
+                { value: 'outOfStock', label: 'Sin Stock' },
+                { value: 'lowStock', label: 'Stock Bajo' },
+                { value: 'inStock', label: 'En Stock' },
+                { value: 'active', label: 'Activos' },
+                { value: 'inactive', label: 'Inactivos' }
+            ]
+        };
+    } catch (error) {
+        throw new Error(`Error al obtener categorías: ${error.message}`);
     }
+}
 
     // Obtener estadísticas de productos
     async getProductStats() {
@@ -467,6 +656,87 @@ class ProductManager extends BaseManager {
             throw new Error(`Error al actualizar stock: ${error.message}`);
         }
     }
-}
+
+    // MÉTODOS MOVIDOS DENTRO DE LA CLASE
+    async getCategories() {
+        try {
+            console.log('🔍 ProductManager.getCategories iniciado...');
+            const categories = await this.model.distinct('category');
+            const cleanCategories = categories
+                .filter(cat => cat && typeof cat === 'string' && cat.trim())
+                .map(cat => cat.trim())
+                .sort();
+            
+            console.log('✅ Categorías encontradas:', cleanCategories);
+            return cleanCategories;
+        } catch (error) {
+            console.error('❌ Error en ProductManager.getCategories:', error);
+            throw new Error(`Error al obtener categorías: ${error.message}`);
+        }
+    }
+
+    async getProductStatsNew() {
+        try {
+            console.log('📊 ProductManager.getProductStatsNew iniciado...');
+            
+            const totalProducts = await this.model.countDocuments();
+            const activeProducts = await this.model.countDocuments({ status: true });
+            const outOfStock = await this.model.countDocuments({ stock: { $lte: 0 } });
+            
+            const result = {
+                totalProducts,
+                activeProducts,
+                inactiveProducts: totalProducts - activeProducts,
+                outOfStock,
+                lowStock: 0,
+                avgPrice: 0,
+                minPrice: 0,
+                maxPrice: 0,
+                totalStock: 0,
+                totalValue: 0
+            };
+            
+            console.log('✅ Estadísticas calculadas:', result);
+            return result;
+            
+        } catch (error) {
+            console.error('❌ Error en ProductManager.getProductStatsNew:', error);
+            return {
+                totalProducts: 0,
+                activeProducts: 0,
+                inactiveProducts: 0,
+                outOfStock: 0,
+                lowStock: 0,
+                avgPrice: 0,
+                minPrice: 0,
+                maxPrice: 0,
+                totalStock: 0,
+                totalValue: 0
+            };
+        }
+    }
+
+    async debugConnection() {
+        try {
+            console.log('🔍 Debug de conexión ProductManager...');
+            console.log('- Modelo:', this.model.modelName);
+            console.log('- Colección:', this.model.collection.name);
+            
+            const count = await this.model.countDocuments();
+            console.log('- Total documentos:', count);
+            
+            if (count > 0) {
+                const sample = await this.model.findOne().lean();
+                console.log('- Documento de muestra:', sample);
+            }
+            
+            return { connected: true, count, model: this.model.modelName };
+        } catch (error) {
+            console.error('❌ Error en debug de conexión:', error);
+            return { connected: false, error: error.message };
+        }
+    }
+
+} // <-- UNA SOLA LLAVE DE CIERRE DE LA CLASE
 
 export default ProductManager;

@@ -6,22 +6,23 @@ const router = Router();
 const productManager = new ProductManager();
 const cartManager = new CartManager();
 
+
 // Ruta Raíz - Home con filtros y paginación
-router.get('/', async (req, res) => {
+router.get('/products', async (req, res) => {
     try {
-        console.log('🏠 Cargando home con parámetros:', req.query);
+        console.log('🏠 Cargando /products con parámetros:', req.query);
 
         // Extraer parámetros de la URL
         const {
             page = 1,
-            limit = 12, // Mostrar más productos en la vista principal
+            limit = 12,
             category,
-            status = 'true', // Solo productos activos por defecto
+            status = 'true',
             minPrice,
             maxPrice,
             search,
             availability,
-            sort = 'status_desc' // Productos activos primero
+            sort = 'status_desc'
         } = req.query;
 
         // Opciones para el manager
@@ -37,21 +38,41 @@ router.get('/', async (req, res) => {
             sort
         };
 
-        // Obtener productos y categorías para los filtros
-        const [productsResult, categories, stats] = await Promise.all([
-            productManager.getProducts(options),
-            productManager.getCategories(),
-            productManager.getProductStats()
-        ]);
+        console.log('📊 Obteniendo productos...');
+        const productsResult = await productManager.getProducts(options);
+        console.log('✅ Productos obtenidos:', productsResult.payload.length);
 
-        console.log('📊 Datos obtenidos:', {
-            products: productsResult.payload.length,
-            categories: categories.length,
-            totalDocs: productsResult.totalDocs
-        });
+        // Obtener categorías
+        let categories = [];
+        try {
+            categories = await productManager.getCategories();
+        } catch (error) {
+            console.log('⚠️ Usando categorías por defecto');
+            categories = ['ofertas', 'nuevos', 'mas vendidos', 'nuevo'];
+        }
 
+        // Obtener estadísticas
+        let stats = null;
+        try {
+            stats = await productManager.getProductStats();
+        } catch (error) {
+            console.log('⚠️ Usando estadísticas básicas');
+            stats = {
+                totalProducts: productsResult.totalDocs || 0,
+                activeProducts: productsResult.payload?.filter(p => p.status)?.length || 0,
+                inactiveProducts: 0,
+                outOfStock: 0,
+                lowStock: 0,
+                avgPrice: 0,
+                minPrice: 0,
+                maxPrice: 0,
+                totalValue: 0
+            };
+        }
+
+        // RENDERIZAR CON LA VISTA home.handlebars (es la vista principal de productos)
         res.render('home', {
-            title: 'Inicio',
+            title: 'Catálogo de Productos', // Cambiar título
             products: productsResult.payload,
             pagination: {
                 page: productsResult.page,
@@ -74,45 +95,56 @@ router.get('/', async (req, res) => {
                 search: search || ''
             },
             stats,
-            query: req.query // Para mantener filtros en la paginación
+            query: req.query,
+            isProductsPage: true // Flag para identificar que es la página de productos
         });
 
     } catch (error) {
-        console.error('❌ Error en ruta home:', error);
+        console.error('❌ Error en ruta /products:', error);
         res.render('home', {
-            title: 'Inicio',
+            title: 'Catálogo de Productos',
             products: [],
-            pagination: {
-                page: 1,
-                totalPages: 0,
-                hasNextPage: false,
-                hasPrevPage: false,
-                totalDocs: 0
-            },
+            pagination: { page: 1, totalPages: 0, hasNextPage: false, hasPrevPage: false, totalDocs: 0 },
             filters: {
                 categories: [],
                 currentCategory: 'all',
                 currentStatus: 'all',
                 currentAvailability: 'all',
                 currentSort: 'status_desc',
-                minPrice: '',
-                maxPrice: '',
-                search: ''
+                minPrice: '', maxPrice: '', search: ''
             },
-            error: 'Error al cargar productos: ' + error.message
+            stats: { totalProducts: 0, activeProducts: 0, inactiveProducts: 0, outOfStock: 0, lowStock: 0, avgPrice: 0, minPrice: 0, maxPrice: 0, totalValue: 0 },
+            error: 'Error al cargar productos: ' + error.message,
+            isProductsPage: true
         });
     }
+});
+
+// RUTA RAÍZ REDIRIGE A /products (según buenas prácticas)
+router.get('/', (req, res) => {
+    console.log('🔄 Redirigiendo de / a /products');
+    res.redirect('/products');
 });
 
 // Ruta para realTimeProducts.handlebars con compatibilidad
 router.get('/realtimeproducts', async (req, res) => {
     try {
-        // Usar el método legacy para mantener compatibilidad con WebSockets
-        const products = await productManager.getProductsLegacy();
+        console.log('🔄 Cargando realTimeProducts...');
+        
+        // CAMBIO: Usar getProducts en lugar de getProductsLegacy
+        const result = await productManager.getProducts({ 
+            limit: 100, // Obtener más productos para la vista en tiempo real
+            status: undefined // Incluir todos los productos (activos e inactivos)
+        });
+        
+        console.log('📦 Productos obtenidos para realTimeProducts:', {
+            count: result.payload.length,
+            total: result.totalDocs
+        });
         
         res.render('realTimeProducts', {
             title: 'Productos en Tiempo Real',
-            products: products
+            products: result.payload
         });
     } catch (error) {
         console.error('❌ Error en ruta realtimeproducts:', error);
