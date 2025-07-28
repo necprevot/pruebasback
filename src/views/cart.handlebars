@@ -58,7 +58,7 @@
                         <div class="quantity-controls">
                             <label>Cantidad:</label>
                             <div class="quantity-input-group">
-                                <button onclick="updateQuantity('{{this.product._id}}', {{this.quantity}} - 1)" class="btn-quantity">-</button>
+                                <button onclick="updateQuantityByButton('{{this.product._id}}', -1)" class="btn-quantity">-</button>
                                 <input type="number" 
                                        id="quantity-{{this.product._id}}" 
                                        value="{{this.quantity}}" 
@@ -67,7 +67,7 @@
                                        onchange="updateQuantity('{{this.product._id}}', this.value)"
                                        class="quantity-input"
                                        data-product-price="{{this.product.price}}">
-                                <button onclick="updateQuantity('{{this.product._id}}', {{this.quantity}} + 1)" class="btn-quantity">+</button>
+                                <button onclick="updateQuantityByButton('{{this.product._id}}', 1)" class="btn-quantity">+</button>
                             </div>
                             <small class="stock-info">Stock disponible: {{this.product.stock}}</small>
                         </div>
@@ -137,11 +137,13 @@ function calculateTotals() {
         const quantityInput = item.querySelector('.quantity-input');
         const price = parseFloat(item.dataset.price);
         
-        if (quantityInput) {
+        if (quantityInput && price) {
+            // NUEVA LÓGICA: Usar el valor actual del input, no el dataset
             const quantity = parseInt(quantityInput.value) || 0;
             const subtotal = price * quantity;
             
             console.log(`Producto ${index + 1}:`, {
+                id: item.dataset.productId,
                 quantity,
                 price,
                 subtotal
@@ -150,29 +152,82 @@ function calculateTotals() {
             totalItems += quantity;
             totalAmount += subtotal;
             
-            // Actualizar subtotal individual
+            // NUEVO: Actualizar subtotal individual inmediatamente
             const subtotalElement = item.querySelector(`#subtotal-${item.dataset.productId}`);
             if (subtotalElement) {
-                subtotalElement.textContent = subtotal;
+                subtotalElement.textContent = Math.round(subtotal);
+                console.log(`💰 Subtotal actualizado para ${item.dataset.productId}: ${subtotal}`);
             }
+            
+            // NUEVO: Actualizar el dataset para mantener sincronización
+            item.dataset.quantity = quantity;
         }
     });
     
     console.log('📊 Totales calculados:', { totalItems, totalAmount });
     
-    // Actualizar UI
+    // Actualizar UI total
     const totalItemsElement = document.getElementById('totalItems');
     const calculatedTotalElement = document.getElementById('calculatedTotal');
     
     if (totalItemsElement) {
         totalItemsElement.textContent = totalItems;
+        console.log('🔢 Total items actualizado en UI:', totalItems);
     }
     
     if (calculatedTotalElement) {
-        calculatedTotalElement.textContent = totalAmount;
+        calculatedTotalElement.textContent = Math.round(totalAmount);
+        console.log('💵 Total amount actualizado en UI:', totalAmount);
     }
     
     return { totalItems, totalAmount };
+}
+
+async function syncWithServer() {
+    try {
+        console.log('🔄 Sincronizando con servidor...');
+        const response = await fetch(`/api/carts/${cartId}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            const serverCart = data.cart;
+            
+            console.log('📡 Datos del servidor:', serverCart);
+            
+            // Verificar si hay diferencias y corregir si es necesario
+            serverCart.products.forEach(serverItem => {
+                const quantityInput = document.getElementById(`quantity-${serverItem.product._id}`);
+                const clientQuantity = parseInt(quantityInput?.value || 0);
+                
+                if (clientQuantity !== serverItem.quantity) {
+                    console.log(`⚠️ Diferencia detectada en ${serverItem.product._id}: cliente=${clientQuantity}, servidor=${serverItem.quantity}`);
+                    if (quantityInput) {
+                        quantityInput.value = serverItem.quantity;
+                        quantityInput.defaultValue = serverItem.quantity;
+                    }
+                }
+            });
+            
+            // Recalcular después de sincronizar
+            calculateTotals();
+        }
+    } catch (error) {
+        console.error('❌ Error sincronizando con servidor:', error);
+    }
+}
+
+function handleQuantityInputChange(productId) {
+    const quantityInput = document.getElementById(`quantity-${productId}`);
+    if (!quantityInput) return;
+    
+    const newQuantity = parseInt(quantityInput.value);
+    const oldQuantity = parseInt(quantityInput.defaultValue || 1);
+    
+    // Solo actualizar si realmente cambió
+    if (newQuantity !== oldQuantity) {
+        console.log(`🔄 Cantidad cambió de ${oldQuantity} a ${newQuantity} para ${productId}`);
+        updateQuantity(productId, newQuantity);
+    }
 }
 
 // Ejecutar cálculo al cargar la página
@@ -196,13 +251,16 @@ async function updateQuantity(productId, newQuantity) {
             // Restaurar valor anterior
             const quantityInput = document.getElementById(`quantity-${productId}`);
             if (quantityInput) {
-                quantityInput.value = 1;
+                quantityInput.value = quantityInput.defaultValue || 1;
             }
+            calculateTotals(); // Recalcular con valor restaurado
         }
         return;
     }
     
     try {
+        console.log(`🔄 Actualizando cantidad de ${productId} a ${newQuantity}`);
+        
         const response = await fetch(`/api/carts/${cartId}/product/${productId}`, {
             method: 'PUT',
             headers: {
@@ -212,23 +270,40 @@ async function updateQuantity(productId, newQuantity) {
         });
         
         if (response.ok) {
+            console.log('✅ Cantidad actualizada en servidor');
+            
+            // NUEVO: Actualizar el dataset del elemento inmediatamente
+            const productItem = document.querySelector(`[data-product-id="${productId}"]`);
+            if (productItem) {
+                productItem.dataset.quantity = newQuantity;
+                console.log(`📦 Dataset actualizado: quantity=${newQuantity}`);
+            }
+            
+            // NUEVO: Actualizar el input visualmente
+            const quantityInput = document.getElementById(`quantity-${productId}`);
+            if (quantityInput) {
+                quantityInput.value = newQuantity;
+                quantityInput.defaultValue = newQuantity; // Para restaurar en caso de error
+            }
+            
             // Recalcular totales inmediatamente
             calculateTotals();
             showAlert('Cantidad actualizada', 'success');
+            
         } else {
             const error = await response.json();
-            showAlert('Error: ' + error.message, 'danger');
-            
-            // Restaurar valor anterior en caso de error
-            const quantityInput = document.getElementById(`quantity-${productId}`);
-            if (quantityInput) {
-                quantityInput.value = quantityInput.defaultValue;
-            }
-            calculateTotals();
+            throw new Error(error.message);
         }
     } catch (error) {
-        console.error('Error actualizando cantidad:', error);
-        showAlert('Error de conexión', 'danger');
+        console.error('❌ Error actualizando cantidad:', error);
+        showAlert('Error: ' + error.message, 'danger');
+        
+        // Restaurar valor anterior en caso de error
+        const quantityInput = document.getElementById(`quantity-${productId}`);
+        if (quantityInput) {
+            quantityInput.value = quantityInput.defaultValue || 1;
+        }
+        calculateTotals();
     }
 }
 
@@ -363,6 +438,88 @@ window.cartDebug = function() {
             quantity: item.dataset.quantity,
             price: item.dataset.price,
             currentInputValue: item.querySelector('.quantity-input')?.value
+        });
+    });
+    
+    return calculateTotals();
+};
+
+function setupQuantityControls() {
+    // Configurar listeners para inputs de cantidad
+    document.querySelectorAll('.quantity-input').forEach(input => {
+        const productId = input.id.replace('quantity-', '');
+        
+        // Al cambiar el valor manualmente
+        input.addEventListener('change', () => {
+            handleQuantityInputChange(productId);
+        });
+        
+        // Al presionar Enter
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleQuantityInputChange(productId);
+            }
+        });
+    });
+}
+
+window.updateQuantityByButton = function(productId, delta) {
+    const quantityInput = document.getElementById(`quantity-${productId}`);
+    if (!quantityInput) return;
+    
+    const currentQuantity = parseInt(quantityInput.value) || 1;
+    const newQuantity = currentQuantity + delta;
+    
+    console.log(`🔲 Botón presionado: ${productId}, delta: ${delta}, nueva cantidad: ${newQuantity}`);
+    
+    if (newQuantity < 1) {
+        if (confirm('¿Quieres eliminar este producto del carrito?')) {
+            removeFromCart(productId);
+        }
+        return;
+    }
+    
+    // Actualizar input visualmente primero
+    quantityInput.value = newQuantity;
+    
+    // Recalcular totales inmediatamente para feedback visual
+    calculateTotals();
+    
+    // Luego sincronizar con servidor
+    updateQuantity(productId, newQuantity);
+};
+
+// Inicializar cuando se carga la página
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Página cargada, configurando carrito...');
+    
+    // Configurar controles de cantidad
+    setupQuantityControls();
+    
+    // Calcular totales iniciales
+    setTimeout(() => {
+        calculateTotals();
+    }, 100);
+    
+    // Sincronizar con servidor cada 30 segundos (opcional)
+    setInterval(syncWithServer, 30000);
+});
+
+// NUEVA FUNCIÓN: Debug mejorado
+window.cartDebugAdvanced = function() {
+    console.log('=== CART DEBUG AVANZADO ===');
+    
+    const productItems = document.querySelectorAll('.cart-product-item');
+    console.log('Productos en DOM:', productItems.length);
+    
+    productItems.forEach((item, index) => {
+        const quantityInput = item.querySelector('.quantity-input');
+        console.log(`Producto ${index + 1}:`, {
+            id: item.dataset.productId,
+            datasetQuantity: item.dataset.quantity,
+            inputValue: quantityInput?.value,
+            inputDefaultValue: quantityInput?.defaultValue,
+            price: item.dataset.price
         });
     });
     
