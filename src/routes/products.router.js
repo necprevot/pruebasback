@@ -70,7 +70,7 @@ router.get("/", async (req, res) => {
 
     } catch (error) {
         console.error('❌ Error en GET /api/products:', error);
-        
+
         // Respuesta de error según el formato de la consigna
         res.status(500).json({
             status: "error",
@@ -240,8 +240,11 @@ router.post('/', async (req, res) => {
         // Emitir WebSocket
         const io = req.app.get('io');
         if (io) {
-            const products = await productManager.getProductsLegacy();
-            io.emit('updateProducts', products);
+            const result = await productManager.getProducts({
+                limit: 100,
+                status: undefined
+            });
+            io.emit('updateProducts', result.payload);
         }
 
         res.status(201).json({
@@ -273,8 +276,11 @@ router.put("/:pid", async (req, res) => {
         // Emitir WebSocket
         const io = req.app.get('io');
         if (io) {
-            const products = await productManager.getProductsLegacy();
-            io.emit('updateProducts', products);
+            const result = await productManager.getProducts({
+                limit: 100,
+                status: undefined
+            });
+            io.emit('updateProducts', result.payload);
             console.log('📡 WebSocket emitido: productos actualizados');
         }
 
@@ -304,8 +310,11 @@ router.delete('/:pid', async (req, res) => {
         // Emitir WebSocket
         const io = req.app.get('io');
         if (io) {
-            const products = await productManager.getProductsLegacy();
-            io.emit('updateProducts', products);
+            const result = await productManager.getProducts({
+                limit: 100,
+                status: undefined
+            });
+            io.emit('updateProducts', result.payload);
         }
 
         res.json({
@@ -331,7 +340,7 @@ router.post('/:pid/delete', async (req, res) => {
         if (!isAdmin) {
             return res.status(403).render('realTimeProducts', {
                 title: 'Productos en Tiempo Real',
-                products: await productManager.getProductsLegacy(),
+                products: await productManager.getProducts(),
                 error: 'Solo los administradores pueden eliminar productos'
             });
         }
@@ -342,19 +351,22 @@ router.post('/:pid/delete', async (req, res) => {
         // Emitir WebSocket
         const io = req.app.get('io');
         if (io) {
-            const products = await productManager.getProductsLegacy();
-            io.emit('updateProducts', products);
+            const result = await productManager.getProducts({
+                limit: 100,
+                status: undefined
+            });
+            io.emit('updateProducts', result.payload);
         }
 
         res.render('realTimeProducts', {
             title: 'Productos en Tiempo Real',
-            products: await productManager.getProductsLegacy(),
+            products: await productManager.getProducts(),
             success: 'Producto eliminado exitosamente'
         });
 
     } catch (error) {
         console.error('❌ Error eliminando producto:', error);
-        const products = await productManager.getProductsLegacy();
+        const products = await productManager.getProducts();
         res.render('realTimeProducts', {
             title: 'Productos en Tiempo Real',
             products: products,
@@ -366,7 +378,7 @@ router.post('/:pid/delete', async (req, res) => {
 router.get("/filters", async (req, res) => {
     try {
         const filtersData = await productManager.getCategoriesForConsigna();
-        
+
         res.json({
             status: "success",
             filters: {
@@ -404,7 +416,7 @@ router.get("/test", async (req, res) => {
             },
             {
                 description: "Página 2",
-                url: "/api/products?page=2", 
+                url: "/api/products?page=2",
                 params: { page: 2 }
             },
             {
@@ -413,7 +425,7 @@ router.get("/test", async (req, res) => {
                 params: { sort: "asc" }
             },
             {
-                description: "Ordenar por precio descendente", 
+                description: "Ordenar por precio descendente",
                 url: "/api/products?sort=desc",
                 params: { sort: "desc" }
             },
@@ -424,7 +436,7 @@ router.get("/test", async (req, res) => {
             },
             {
                 description: "Filtrar productos sin stock",
-                url: "/api/products?query=outOfStock", 
+                url: "/api/products?query=outOfStock",
                 params: { query: "outOfStock" }
             },
             {
@@ -449,7 +461,7 @@ router.get("/test", async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
-            status: "error", 
+            status: "error",
             message: "Error en endpoint de prueba",
             error: error.message
         });

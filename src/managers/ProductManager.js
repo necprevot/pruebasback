@@ -403,26 +403,6 @@ async getProductsConsigna(consignaParams = {}) {
         throw new Error(`Error al obtener productos según consigna: ${error.message}`);
     }
 }
-    // Método de compatibilidad para el código existente
- async getProductsLegacy(limit = null) {
-    try {
-        console.log('🔄 getProductsLegacy llamado con limit:', limit);
-        
-        const options = { 
-            page: 1,
-            limit: limit || 100, // Por defecto 100 productos
-            status: undefined // Incluir todos los productos
-        };
-        
-        const result = await this.getProducts(options);
-        console.log('✅ getProductsLegacy retornando:', result.payload.length, 'productos');
-        
-        return result.payload; // Retornar solo los productos para mantener compatibilidad
-    } catch (error) {
-        console.error('❌ Error en getProductsLegacy:', error);
-        throw error;
-    }
-}
 
     // Obtener categorías disponibles
    async getCategoriesForConsigna() {
