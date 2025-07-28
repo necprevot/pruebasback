@@ -3,14 +3,11 @@
 
     <!-- Estadísticas rápidas -->
     {{#if stats}}
-    <div class="stats-bar">
-        <span class="stat-item">📦 Total: {{stats.totalProducts}}</span>
-        <span class="stat-item">✅ Activos: {{stats.activeProducts}}</span>
-        <span class="stat-item">📊 Categorías: {{filters.categories.length}}</span>
-        {{#if pagination.totalDocs}}
-        <span class="stat-item">🔍 Mostrando: {{pagination.totalDocs}} productos</span>
-        {{/if}}
+    {{#if pagination.totalDocs}}
+    <div class="results-info">
+        <p>📦 <strong>{{pagination.totalDocs}}</strong> productos encontrados</p>
     </div>
+    {{/if}}
     {{/if}}
 </div>
 
@@ -36,89 +33,72 @@
 <!-- Filtros y Búsqueda -->
 <div class="filters-section">
     <form id="filtersForm" method="GET" action="/products">
-        <div class="filters-row">
-            <!-- Búsqueda por texto -->
-            <div class="filter-group">
-                <label for="search">🔍 Buscar:</label>
-                <input type="text" id="search" name="search" value="{{filters.search}}"
-                    placeholder="Buscar productos...">
+        <div class="filters-container">
+            <!-- Búsqueda principal -->
+            <div class="search-main">
+                <div class="search-group">
+                    <label for="search">🔍 Buscar productos</label>
+                    <input type="text" id="search" name="search" value="{{filters.search}}"
+                        placeholder="Buscar por nombre, categoría..." class="search-input">
+                </div>
+                <button type="submit" class="btn-search">Buscar</button>
             </div>
 
-            <!-- Filtro por categoría -->
-            <div class="filter-group">
-                <label for="category">📂 Categoría:</label>
-                <select id="category" name="category">
-                    <option value="all" {{#eq filters.currentCategory 'all' }}selected{{/eq}}>Todas</option>
-                    {{#each filters.categories}}
-                    <option value="{{this}}" {{#eq this ../filters.currentCategory}}selected{{/eq}}>{{this}}</option>
-                    {{/each}}
-                </select>
-            </div>
+            <!-- Filtros secundarios -->
+            <div class="filters-row">
+                <div class="filter-group">
+                    <label for="category">📂 Categoría</label>
+                    <select id="category" name="category">
+                        <option value="all" {{#eq filters.currentCategory 'all' }}selected{{/eq}}>
+                            Todas las categorías
+                        </option>
+                        {{#each filters.categories}}
+                        <option value="{{this}}" {{#eq this ../filters.currentCategory}}selected{{/eq}}>
+                            {{this}}
+                        </option>
+                        {{/each}}
+                    </select>
+                </div>
 
-            <!-- Filtro por disponibilidad -->
-            <div class="filter-group">
-                <label for="availability">📦 Disponibilidad:</label>
-                <select id="availability" name="availability">
-                    <option value="all" {{#eq filters.currentAvailability 'all' }}selected{{/eq}}>Todos</option>
-                    <option value="available" {{#eq filters.currentAvailability 'available' }}selected{{/eq}}>
-                        Disponibles</option>
-                    <option value="outOfStock" {{#eq filters.currentAvailability 'outOfStock' }}selected{{/eq}}>Sin
-                        Stock</option>
-                    <option value="lowStock" {{#eq filters.currentAvailability 'lowStock' }}selected{{/eq}}>Stock Bajo
-                    </option>
-                </select>
-            </div>
+                <div class="filter-group">
+                    <label for="availability">📦 Disponibilidad</label>
+                    <select id="availability" name="availability">
+                        <option value="all" {{#eq filters.currentAvailability 'all' }}selected{{/eq}}>
+                            Todos
+                        </option>
+                        <option value="available" {{#eq filters.currentAvailability 'available' }}selected{{/eq}}>
+                            Disponibles
+                        </option>
+                        <option value="outOfStock" {{#eq filters.currentAvailability 'outOfStock' }}selected{{/eq}}>
+                            Sin stock
+                        </option>
+                    </select>
+                </div>
 
-            <!-- Ordenamiento -->
-            <div class="filter-group">
-                <label for="sort">📊 Ordenar por:</label>
-                <select id="sort" name="sort">
-                    <option value="status_desc" {{#eq filters.currentSort 'status_desc' }}selected{{/eq}}>Relevancia
-                    </option>
-                    <option value="price_asc" {{#eq filters.currentSort 'price_asc' }}selected{{/eq}}>Precio: Menor a
-                        Mayor</option>
-                    <option value="price_desc" {{#eq filters.currentSort 'price_desc' }}selected{{/eq}}>Precio: Mayor a
-                        Menor</option>
-                    <option value="title_asc" {{#eq filters.currentSort 'title_asc' }}selected{{/eq}}>Nombre A-Z
-                    </option>
-                    <option value="title_desc" {{#eq filters.currentSort 'title_desc' }}selected{{/eq}}>Nombre Z-A
-                    </option>
-                    <option value="newest" {{#eq filters.currentSort 'newest' }}selected{{/eq}}>Más Recientes</option>
-                    <option value="stock_desc" {{#eq filters.currentSort 'stock_desc' }}selected{{/eq}}>Mayor Stock
-                    </option>
-                </select>
-            </div>
-        </div>
+                <div class="filter-group">
+                    <label for="sort">📊 Ordenar por</label>
+                    <select id="sort" name="sort">
+                        <option value="relevance" {{#eq filters.currentSort 'relevance' }}selected{{/eq}}>
+                            Relevancia
+                        </option>
+                        <option value="price_asc" {{#eq filters.currentSort 'price_asc' }}selected{{/eq}}>
+                            Precio ↑
+                        </option>
+                        <option value="price_desc" {{#eq filters.currentSort 'price_desc' }}selected{{/eq}}>
+                            Precio ↓
+                        </option>
+                        <option value="title_asc" {{#eq filters.currentSort 'title_asc' }}selected{{/eq}}>
+                            Nombre A-Z
+                        </option>
+                        <option value="newest" {{#eq filters.currentSort 'newest' }}selected{{/eq}}>
+                            Más recientes
+                        </option>
+                    </select>
+                </div>
 
-        <div class="filters-row">
-            <!-- Rango de precios -->
-            <div class="filter-group">
-                <label for="minPrice">💰 Precio desde:</label>
-                <input type="number" id="minPrice" name="minPrice" value="{{filters.minPrice}}" placeholder="Mín"
-                    min="0" step="1">
-            </div>
-
-            <div class="filter-group">
-                <label for="maxPrice">💰 Precio hasta:</label>
-                <input type="number" id="maxPrice" name="maxPrice" value="{{filters.maxPrice}}" placeholder="Máx"
-                    min="0" step="1">
-            </div>
-
-            <!-- Productos por página -->
-            <div class="filter-group">
-                <label for="limit">📄 Por página:</label>
-                <select id="limit" name="limit">
-                    <option value="6" {{#eq pagination.limit 6}}selected{{/eq}}>6</option>
-                    <option value="12" {{#eq pagination.limit 12}}selected{{/eq}}>12</option>
-                    <option value="24" {{#eq pagination.limit 24}}selected{{/eq}}>24</option>
-                    <option value="48" {{#eq pagination.limit 48}}selected{{/eq}}>48</option>
-                </select>
-            </div>
-
-            <!-- Botones de acción -->
-            <div class="filter-actions">
-                <button type="submit" class="btn-primary">🔍 Filtrar</button>
-                <a href="/" class="btn-secondary">🔄 Limpiar</a>
+                <div class="filter-actions">
+                    <a href="/products" class="btn-clear">🔄 Limpiar</a>
+                </div>
             </div>
         </div>
 
@@ -139,42 +119,43 @@
             </div>
             <div class="product-price">${{this.price}}</div>
         </div>
-        
+
         {{#if this.thumbnails.length}}
-            <div class="product-images">
-                {{#each this.thumbnails}}
-                    {{#if @first}}
-                        <!-- AGREGAR ENLACE A LA IMAGEN -->
-                        <a href="/products/{{../this._id}}">
-                            <img src="{{this}}" alt="{{../this.title}}" class="product-image" onerror="this.style.display='none';">
-                        </a>
-                    {{/if}}
-                {{/each}}
-            </div>
+        <div class="product-images">
+            {{#each this.thumbnails}}
+            {{#if @first}}
+            <!-- AGREGAR ENLACE A LA IMAGEN -->
+            <a href="/products/{{../this._id}}">
+                <img src="{{this}}" alt="{{../this.title}}" class="product-image" onerror="this.style.display='none';">
+            </a>
+            {{/if}}
+            {{/each}}
+        </div>
         {{else}}
-            <div class="product-no-image">
-                <a href="/products/{{this._id}}">📦</a>
-            </div>
+        <div class="product-no-image">
+            <a href="/products/{{this._id}}">📦</a>
+        </div>
         {{/if}}
-        
+
         <p class="product-description">{{this.description}}</p>
-        
+
         <div class="product-details">
             <div class="product-info-row">
                 <span class="info-item">
-                    <strong>Stock:</strong> 
-                    <span class="{{#if this.stock}}{{#if (gt this.stock 5)}}text-success{{else}}text-warning{{/if}}{{else}}text-danger{{/if}}">
+                    <strong>Stock:</strong>
+                    <span
+                        class="{{#if this.stock}}{{#if (gt this.stock 5)}}text-success{{else}}text-warning{{/if}}{{else}}text-danger{{/if}}">
                         {{#if this.stock}}{{this.stock}}{{else}}Sin stock{{/if}}
                     </span>
                 </span>
                 <span class="info-item">
-                    <strong>Categoría:</strong> 
+                    <strong>Categoría:</strong>
                     <a href="/products?query={{this.category}}" class="category-link">{{this.category}}</a>
                 </span>
             </div>
             <div class="product-info-row">
                 <span class="info-item">
-                    <strong>Estado:</strong> 
+                    <strong>Estado:</strong>
                     <span class="{{#if this.status}}text-success{{else}}text-danger{{/if}}">
                         {{#if this.status}}Activo{{else}}Inactivo{{/if}}
                     </span>
@@ -184,51 +165,47 @@
                 </span>
             </div>
         </div>
-        
+
         <!-- Controles del carrito -->
         {{#if this.status}}
-            {{#if this.stock}}
-                <div class="cart-controls">
-                    <div class="quantity-section">
-                        <label for="quantity-{{this._id}}">Cantidad:</label>
-                        <input type="number" 
-                               id="quantity-{{this._id}}" 
-                               min="1" 
-                               max="{{this.stock}}" 
-                               value="1" 
-                               class="quantity-input">
-                    </div>
-                    
-                    <!-- BOTONES DE ACCIÓN MEJORADOS -->
-                    <div class="product-actions">
-                        <button onclick="addToCart('{{this._id}}', '{{this.title}}', {{this.price}}, {{this.stock}})" 
-                                class="btn-success add-to-cart-btn">
-                            🛒 Agregar al Carrito
-                        </button>
-                        
-                        <!-- NUEVO BOTÓN PARA VER DETALLES -->
-                        <a href="/products/{{this._id}}" class="btn-info view-details-btn">
-                            👁️ Ver Detalles
-                        </a>
-                    </div>
-                </div>
-            {{else}}
-                <div class="out-of-stock">
-                    <span class="stock-message">Sin stock disponible</span>
-                    <!-- ENLACE PARA VER DETALLES AÚN SIN STOCK -->
-                    <a href="/products/{{this._id}}" class="btn-secondary view-details-btn">
-                        👁️ Ver Detalles
-                    </a>
-                </div>
-            {{/if}}
-        {{else}}
-            <div class="product-inactive">
-                <span class="inactive-message">Producto no disponible</span>
-                <!-- ENLACE PARA VER DETALLES AÚN INACTIVO -->
-                <a href="/products/{{this._id}}" class="btn-secondary view-details-btn">
+        {{#if this.stock}}
+        <div class="cart-controls">
+            <div class="quantity-section">
+                <label for="quantity-{{this._id}}">Cantidad:</label>
+                <input type="number" id="quantity-{{this._id}}" min="1" max="{{this.stock}}" value="1"
+                    class="quantity-input">
+            </div>
+
+            <!-- BOTONES DE ACCIÓN MEJORADOS -->
+            <div class="product-actions">
+                <button onclick="addToCart('{{this._id}}', '{{this.title}}', {{this.price}}, {{this.stock}})"
+                    class="btn-success add-to-cart-btn">
+                    🛒 Agregar al Carrito
+                </button>
+
+                <!-- NUEVO BOTÓN PARA VER DETALLES -->
+                <a href="/products/{{this._id}}" class="btn-info view-details-btn">
                     👁️ Ver Detalles
                 </a>
             </div>
+        </div>
+        {{else}}
+        <div class="out-of-stock">
+            <span class="stock-message">Sin stock disponible</span>
+            <!-- ENLACE PARA VER DETALLES AÚN SIN STOCK -->
+            <a href="/products/{{this._id}}" class="btn-secondary view-details-btn">
+                👁️ Ver Detalles
+            </a>
+        </div>
+        {{/if}}
+        {{else}}
+        <div class="product-inactive">
+            <span class="inactive-message">Producto no disponible</span>
+            <!-- ENLACE PARA VER DETALLES AÚN INACTIVO -->
+            <a href="/products/{{this._id}}" class="btn-secondary view-details-btn">
+                👁️ Ver Detalles
+            </a>
+        </div>
         {{/if}}
     </div>
     {{/each}}
@@ -368,19 +345,19 @@
 
     // Inicializar filtros
     function initializeFilters() {
-    const form = document.getElementById('filtersForm');
-    const searchInput = document.getElementById('search');
-    let searchTimeout;
+        const form = document.getElementById('filtersForm');
+        const searchInput = document.getElementById('search');
+        let searchTimeout;
 
-    // Auto-submit en cambios de filtros (excepto búsqueda)
-    const filterInputs = form.querySelectorAll('select, input[type="number"]');
-    filterInputs.forEach(input => {
-        input.addEventListener('change', () => {
-            // Resetear página a 1 cuando cambian los filtros
-            document.querySelector('input[name="page"]').value = 1;
-            form.submit();
+        // Auto-submit en cambios de filtros (excepto búsqueda)
+        const filterInputs = form.querySelectorAll('select, input[type="number"]');
+        filterInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                // Resetear página a 1 cuando cambian los filtros
+                document.querySelector('input[name="page"]').value = 1;
+                form.submit();
+            });
         });
-    });
 
         // Búsqueda con debounce
         searchInput.addEventListener('input', (e) => {
@@ -443,10 +420,10 @@
                 showAlert('Error al inicializar carrito', 'danger');
             }
         } catch (error) {
-        console.error('❌ Error inicializando carrito:', error);
-        showAlert('Error de conexión al inicializar carrito', 'danger');
+            console.error('❌ Error inicializando carrito:', error);
+            showAlert('Error de conexión al inicializar carrito', 'danger');
+        }
     }
-}
 
     async function createNewCart() {
         if (confirm('¿Estás seguro de que quieres crear un nuevo carrito? Se perderá el carrito actual.')) {
