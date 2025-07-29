@@ -78,7 +78,7 @@
                 <div class="filter-group">
                     <label for="sort">📊 Ordenar por</label>
                     <select id="sort" name="sort">
-                        <option value="relevance" {{#eq filters.currentSort 'relevance' }}selected{{/eq}}>
+                        <option value="status_desc" {{#eq filters.currentSort 'status_desc' }}selected{{/eq}}>
                             Relevancia
                         </option>
                         <option value="price_asc" {{#eq filters.currentSort 'price_asc' }}selected{{/eq}}>
@@ -222,22 +222,21 @@
 
     <div class="pagination-controls">
         {{#if pagination.hasPrevPage}}
-        <a href="/products?{{buildQueryString query page=1}}" class="btn-pagination">⏮️ Primera</a>
-        <a href="/products?{{buildQueryString query page=pagination.prevPage}}" class="btn-pagination">⬅️ Anterior</a>
+        <button onclick="goToPage(1)" class="btn-pagination">⏮️ Primera</button>
+        <button onclick="goToPage({{pagination.prevPage}})" class="btn-pagination">⬅️ Anterior</button>
         {{/if}}
-
         <!-- Números de página -->
         {{#each (range (subtract pagination.page 2) (add pagination.page 2) 1 pagination.totalPages)}}
         {{#if (eq this ../pagination.page)}}
         <span class="btn-pagination current-page">{{this}}</span>
         {{else}}
-        <a href="/products?{{buildQueryString ../query page=this}}" class="btn-pagination">{{this}}</a>
+        <button onclick="goToPage({{this}})" class="btn-pagination">{{this}}</button>
         {{/if}}
         {{/each}}
 
         {{#if pagination.hasNextPage}}
-        <a href="/products?{{buildQueryString query page=pagination.nextPage}}" class="btn-pagination">Siguiente ➡️</a>
-        <a href="/products?{{buildQueryString query page=pagination.totalPages}}" class="btn-pagination">Última ⏭️</a>
+        <button onclick="goToPage({{pagination.nextPage}})" class="btn-pagination">Siguiente ➡️</button>
+        <button onclick="goToPage({{pagination.totalPages}})" class="btn-pagination">Última ⏭️</button>
         {{/if}}
     </div>
 </div>
@@ -477,6 +476,11 @@
             console.error('Error agregando al carrito:', error);
             showAlert('Error al agregar producto: ' + error.message, 'danger');
         }
+    }
+    function goToPage(page) {
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('page', page);
+        window.location.href = currentUrl.toString();
     }
 
     async function updateCartDisplay() {

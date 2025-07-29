@@ -15,7 +15,7 @@ router.get('/products', async (req, res) => {
         // Extraer parámetros de la URL
         const {
             page = 1,
-            limit = 12,
+            limit = 2,
             category,
             status = 'true',
             minPrice,
@@ -223,36 +223,6 @@ router.get('/category/:category', async (req, res) => {
     }
 });
 
-// Ruta para ver un producto específico
-router.get('/product/:pid', async (req, res) => {
-    try {
-        const { pid } = req.params;
-        
-        const [product, relatedProducts] = await Promise.all([
-            productManager.getProductById(pid),
-            productManager.getRelatedProducts(pid, 4)
-        ]);
-
-        res.render('product', {
-            title: product.title,
-            product,
-            relatedProducts,
-            breadcrumb: {
-                category: product.category,
-                title: product.title
-            }
-        });
-
-    } catch (error) {
-        console.error('❌ Error obteniendo producto:', error);
-        res.status(404).render('error', {
-            title: 'Producto no encontrado',
-            status: 404,
-            message: error.message,
-            url: req.originalUrl
-        });
-    }
-});
 
 // Ruta para ver un carrito específico (mantener la existente)
 router.get('/carts/:cid', async (req, res) => {

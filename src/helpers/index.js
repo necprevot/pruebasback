@@ -179,18 +179,9 @@ const helpers = {
         return params.toString();
     },
 
-    // HELPERS DE VALIDACIÓN
-    isValidObjectId: function(id) {
-        return /^[0-9a-fA-F]{24}$/.test(id);
-    },
-
     // HELPERS DE UTILIDAD
     json: function(context) {
         return JSON.stringify(context, null, 2);
-    },
-    debugType: function(data) {
-        console.log('🐛 Debug type:', typeof data, data);
-        return typeof data;
     },
 
     // HELPER ESPECÍFICO QUE FALTABA PARA getTotalItems
