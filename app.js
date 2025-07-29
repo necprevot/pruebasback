@@ -33,9 +33,7 @@ configureExpress(app);
 configureHandlebars(app);
 
 // Conectar base de datos
-connectDB()
-    .then(() => logger.success('MongoDB conectado'))
-    .catch(error => logger.error(`Error MongoDB: ${error.message}`));
+connectDB();
 
 // Configurar rutas
 app.set('io', io);
