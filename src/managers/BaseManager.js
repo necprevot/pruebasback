@@ -1,11 +1,23 @@
+import mongoose from 'mongoose';
+
 class BaseManager {
     constructor(model) {
         this.model = model;
     }
 
+    // Verificar conexión antes de cualquier operación
+    async _ensureConnection() {
+        if (mongoose.connection.readyState !== 1) {
+            throw new Error('Base de datos no está conectada. Estado: ' + 
+                ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState]);
+        }
+    }
+
     // Buscar item por ID
     async getById(id) {
         try {
+            await this._ensureConnection();
+            
             const item = await this.model.findById(id);
             
             if (!item) {
@@ -24,6 +36,8 @@ class BaseManager {
     // Obtener todos los items
     async getAll(limit = null, populate = null) {
         try {
+            await this._ensureConnection();
+            
             let query = this.model.find();
             
             if (limit) {
@@ -44,6 +58,8 @@ class BaseManager {
     // Eliminar item por ID
     async deleteById(id) {
         try {
+            await this._ensureConnection();
+            
             const deletedItem = await this.model.findByIdAndDelete(id);
 
             if (!deletedItem) {
@@ -62,6 +78,8 @@ class BaseManager {
     // Actualizar item por ID
     async updateById(id, updatedItem) {
         try {
+            await this._ensureConnection();
+            
             const updated = await this.model.findByIdAndUpdate(
                 id,
                 updatedItem,
@@ -91,6 +109,8 @@ class BaseManager {
     // Agregar nuevo item
     async add(newItemData) {
         try {
+            await this._ensureConnection();
+            
             const newItem = new this.model(newItemData);
             await newItem.save();
             return newItem;
@@ -111,6 +131,8 @@ class BaseManager {
     // Buscar por criterios específicos
     async findBy(criteria, options = {}) {
         try {
+            await this._ensureConnection();
+            
             let query = this.model.find(criteria);
             
             if (options.limit) {
@@ -135,6 +157,8 @@ class BaseManager {
     // Buscar uno por criterios
     async findOneBy(criteria, populate = null) {
         try {
+            await this._ensureConnection();
+            
             let query = this.model.findOne(criteria);
             
             if (populate) {
@@ -151,6 +175,8 @@ class BaseManager {
     // Contar documentos
     async count(criteria = {}) {
         try {
+            await this._ensureConnection();
+            
             const count = await this.model.countDocuments(criteria);
             return count;
         } catch (error) {
@@ -161,6 +187,8 @@ class BaseManager {
     // Verificar si existe
     async exists(criteria) {
         try {
+            await this._ensureConnection();
+            
             const item = await this.model.findOne(criteria);
             return !!item;
         } catch (error) {

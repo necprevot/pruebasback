@@ -120,28 +120,27 @@ router.get('/products', async (req, res) => {
     }
 });
 
-// RUTA RAÍZ REDIRIGE A /products (según buenas prácticas)
+// RUTA RAÍZ REDIRIGE A /products 
 router.get('/', (req, res) => {
     console.log('🔄 Redirigiendo de / a /products');
     res.redirect('/products');
 });
 
-// Ruta para realTimeProducts.handlebars con compatibilidad
+// Ruta para realTimeProducts.handlebars
 router.get('/realtimeproducts', async (req, res) => {
     try {
         console.log('🔄 Cargando realTimeProducts...');
-        
-        // CAMBIO: Usar getProducts en lugar de getProductsLegacy
-        const result = await productManager.getProducts({ 
+
+        const result = await productManager.getProducts({
             limit: 100, // Obtener más productos para la vista en tiempo real
             status: undefined // Incluir todos los productos (activos e inactivos)
         });
-        
+
         console.log('📦 Productos obtenidos para realTimeProducts:', {
             count: result.payload.length,
             total: result.totalDocs
         });
-        
+
         res.render('realTimeProducts', {
             title: 'Productos en Tiempo Real',
             products: result.payload
@@ -224,7 +223,7 @@ router.get('/category/:category', async (req, res) => {
 });
 
 
-// Ruta para ver un carrito específico (mantener la existente)
+// Ruta para ver un carrito específico
 router.get('/carts/:cid', async (req, res) => {
     try {
         const { cid } = req.params;
@@ -256,7 +255,6 @@ router.get('/carts/:cid', async (req, res) => {
             console.log('❌ No hay productos o products no es un array');
         }
 
-        // SOLUCIÓN: Convertir el documento de Mongoose a objeto plano
         const cartPlain = cart.toObject ? cart.toObject() : cart;
         console.log('🔄 Carrito convertido a objeto plano');
 
@@ -268,7 +266,7 @@ router.get('/carts/:cid', async (req, res) => {
 
         res.render('cart', {
             title: `Carrito ${cid}`,
-            cart: cartPlain,  // Usar el objeto plano
+            cart: cartPlain,
             cartId: cid,
             total: total,
             totalItems: totalItems,  // Pasar el total calculado
@@ -294,10 +292,10 @@ router.get('/admin', async (req, res) => {
         const [stats, categories, recentProducts] = await Promise.all([
             productManager.getProductStats(),
             productManager.getCategories(),
-            productManager.getProducts({ 
-                page: 1, 
-                limit: 10, 
-                sort: 'newest' 
+            productManager.getProducts({
+                page: 1,
+                limit: 10,
+                sort: 'newest'
             })
         ]);
 
@@ -320,7 +318,7 @@ router.get('/products/:pid', async (req, res) => {
     try {
         const { pid } = req.params;
         console.log('🔍 Cargando producto individual:', pid);
-        
+
         // VALIDAR FORMATO DE ID ANTES DE CONSULTAR LA BASE DE DATOS
         if (!pid || !/^[0-9a-fA-F]{24}$/.test(pid)) {
             console.log('❌ ID inválido:', pid);
@@ -332,11 +330,11 @@ router.get('/products/:pid', async (req, res) => {
                 backUrl: '/products'
             });
         }
-        
+
         // Obtener el producto específico
         const product = await productManager.getProductById(pid);
         console.log('✅ Producto encontrado:', product.title);
-        
+
         // Obtener productos relacionados (misma categoría)
         let relatedProducts = [];
         try {
@@ -354,7 +352,7 @@ router.get('/products/:pid', async (req, res) => {
         } catch (error) {
             categories = [];
         }
-
+        
         res.render('productDetail', {
             title: product.title,
             product,
@@ -376,12 +374,12 @@ router.get('/products/:pid', async (req, res) => {
 
     } catch (error) {
         console.error('❌ Error obteniendo producto:', error);
-        
+
         // Determinar el tipo de error y renderizar apropiadamente
         let status = 500;
         let title = 'Error del servidor';
         let message = error.message;
-        
+
         if (error.message.includes('no encontrado') || error.message.includes('not found')) {
             status = 404;
             title = 'Producto no encontrado';
@@ -391,7 +389,7 @@ router.get('/products/:pid', async (req, res) => {
             title = 'ID de producto inválido';
             message = 'El ID del producto no tiene un formato válido';
         }
-        
+
         res.status(status).render('error', {
             title,
             status,

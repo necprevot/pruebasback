@@ -4,7 +4,7 @@ let isConnected = false;
 
 const connectDB = async () => {
   try {
-    // ✅ Evitar múltiples conexiones
+    // Evitar múltiples conexiones
     if (isConnected) {
       console.log('🔄 Usando conexión existente a MongoDB');
       return;
@@ -31,24 +31,28 @@ const connectDB = async () => {
     
     console.log('⏳ Intentando conectar...');
     
-    // ✅ Opciones optimizadas para desarrollo
+    // Opciones corregidas para desarrollo
     const options = {
-      serverSelectionTimeoutMS: 5000, // Reducido a 5 segundos
+      serverSelectionTimeoutMS: 10000, 
       socketTimeoutMS: 45000,
       family: 4,
-      maxPoolSize: 10, // ✅ Limitar pool de conexiones
+      maxPoolSize: 10,
       minPoolSize: 1,
-      maxIdleTimeMS: 30000, // ✅ Cerrar conexiones inactivas
-      bufferCommands: false, // ✅ Deshabilitar buffering en desarrollo
-      bufferMaxEntries: 0
+      maxIdleTimeMS: 30000,
     };
     
+    // ESPERAR a que la conexión esté completamente lista
     await mongoose.connect(uri, options);
-    isConnected = true;
     
-    console.log('✅ MongoDB Atlas conectado correctamente');
+    // Verificar que la conexión esté realmente lista
+    if (mongoose.connection.readyState === 1) {
+      isConnected = true;
+      console.log('✅ MongoDB Atlas conectado correctamente');
+    } else {
+      throw new Error('Conexión no está en estado listo');
+    }
     
-    // ✅ Event listeners optimizados (solo una vez)
+    // Event listeners optimizados (solo una vez)
     if (!mongoose.connection._eventsSet) {
       mongoose.connection.on('error', (error) => {
         console.error('❌ Error de conexión MongoDB:', error);
@@ -65,15 +69,25 @@ const connectDB = async () => {
         isConnected = true;
       });
       
-      // ✅ Graceful shutdown
+      mongoose.connection.on('connected', () => {
+        console.log('🔗 MongoDB conectado');
+        isConnected = true;
+      });
+      
+      // Graceful shutdown
       process.on('SIGINT', async () => {
         console.log('🛑 Cerrando conexión a MongoDB...');
-        await mongoose.connection.close();
-        isConnected = false;
+        try {
+          await mongoose.connection.close();
+          isConnected = false;
+          console.log('✅ Conexión cerrada correctamente');
+        } catch (error) {
+          console.error('❌ Error cerrando conexión:', error);
+        }
         process.exit(0);
       });
       
-      // ✅ Marcar eventos como configurados
+      // Marcar eventos como configurados
       mongoose.connection._eventsSet = true;
     }
     
@@ -83,13 +97,30 @@ const connectDB = async () => {
     
     if (process.env.NODE_ENV === 'development') {
       console.log('⚠️ Continuando sin conexión a base de datos en desarrollo...');
+      // No lanzar error en desarrollo
     } else {
       throw error; // En producción, fallar si no hay conexión
     }
   }
 };
 
-// ✅ Función para verificar estado de conexión
+// Función para esperar a que la conexión esté lista
+export const waitForConnection = async (maxWaitTime = 10000) => {
+  const startTime = Date.now();
+  
+  while (!isConnected && mongoose.connection.readyState !== 1) {
+    if (Date.now() - startTime > maxWaitTime) {
+      throw new Error('Timeout esperando conexión a MongoDB');
+    }
+    
+    console.log('⏳ Esperando conexión a MongoDB...');
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  
+  return true;
+};
+
+// Función para verificar estado de conexión
 export const getConnectionStatus = () => {
   return {
     isConnected,
@@ -103,7 +134,7 @@ export const getConnectionStatus = () => {
   };
 };
 
-// ✅ Función para cerrar conexión manualmente
+// Función para cerrar conexión manualmente
 export const closeConnection = async () => {
   if (isConnected) {
     await mongoose.connection.close();

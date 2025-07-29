@@ -221,25 +221,113 @@ class ProductManager extends BaseManager {
 
     // Obtener productos relacionados
     async getRelatedProducts(productId, limit = 4) {
-        try {
-            const product = await this.getById(productId);
+    try {
+        console.log(`🔍 Buscando productos relacionados para: ${productId}`);
+        
+        const product = await this.getById(productId);
+        console.log(`📦 Producto base: ${product.title} (${product.category})`);
+        
+        let relatedProducts = [];
+        
+        // ESTRATEGIA 1: Misma categoría (excluyendo el producto actual)
+        console.log(`🔍 Estrategia 1: Buscando en categoría "${product.category}"`);
+        relatedProducts = await this.model.find({
+            _id: { $ne: productId },
+            category: product.category,
+            status: true
+        })
+        .limit(limit)
+        .select('title price stock thumbnails category status createdAt')
+        .sort({ createdAt: -1 });
+        
+        console.log(`📊 Encontrados en misma categoría: ${relatedProducts.length}`);
+        
+        // ESTRATEGIA 2: Si no hay suficientes, buscar en otras categorías
+        if (relatedProducts.length < limit) {
+            console.log(`🔍 Estrategia 2: Buscando en otras categorías (faltan ${limit - relatedProducts.length})`);
             
-            const relatedProducts = await this.model.find({
+            const additional = await this.model.find({
                 _id: { $ne: productId },
-                category: product.category,
+                category: { $ne: product.category },
                 status: true
             })
-            .limit(limit)
-            .select('title price stock thumbnails category status')
+            .limit(limit - relatedProducts.length)
+            .select('title price stock thumbnails category status createdAt')
             .sort({ createdAt: -1 });
-
-            return relatedProducts;
-
-        } catch (error) {
-            console.error('Error obteniendo productos relacionados:', error);
-            return [];
+            
+            console.log(`📊 Encontrados en otras categorías: ${additional.length}`);
+            relatedProducts = [...relatedProducts, ...additional];
         }
+        
+        // ESTRATEGIA 3: Si aún no hay suficientes, incluir productos inactivos de la misma categoría
+        if (relatedProducts.length < limit) {
+            console.log(`🔍 Estrategia 3: Incluyendo productos inactivos de la misma categoría`);
+            
+            const inactive = await this.model.find({
+                _id: { $ne: productId },
+                category: product.category,
+                status: false
+            })
+            .limit(limit - relatedProducts.length)
+            .select('title price stock thumbnails category status createdAt')
+            .sort({ createdAt: -1 });
+            
+            console.log(`📊 Encontrados inactivos: ${inactive.length}`);
+            relatedProducts = [...relatedProducts, ...inactive];
+        }
+        
+        // ESTRATEGIA 4: Como último recurso, obtener cualquier producto
+        if (relatedProducts.length < limit) {
+            console.log(`🔍 Estrategia 4: Último recurso - cualquier producto diferente`);
+            
+            // Excluir IDs ya encontrados
+            const existingIds = relatedProducts.map(p => p._id.toString());
+            
+            const anyProduct = await this.model.find({
+                _id: { 
+                    $ne: productId,
+                    $nin: existingIds 
+                }
+            })
+            .limit(limit - relatedProducts.length)
+            .select('title price stock thumbnails category status createdAt')
+            .sort({ createdAt: -1 });
+            
+            console.log(`📊 Encontrados (cualquiera): ${anyProduct.length}`);
+            relatedProducts = [...relatedProducts, ...anyProduct];
+        }
+        
+        // ELIMINACIÓN FINAL DE DUPLICADOS
+        const uniqueProducts = [];
+        const seenIds = new Set();
+        
+        for (const prod of relatedProducts) {
+            const prodId = prod._id.toString();
+            if (!seenIds.has(prodId)) {
+                seenIds.add(prodId);
+                uniqueProducts.push(prod);
+            }
+        }
+        
+        console.log(`✅ Total productos relacionados encontrados: ${relatedProducts.length}`);
+        
+        // Log final para debugging
+        if (relatedProducts.length > 0) {
+            console.log('📋 Lista final de productos relacionados:');
+            relatedProducts.forEach((prod, index) => {
+                console.log(`  ${index + 1}. ${prod.title} (${prod.category}) - ${prod.status ? 'Activo' : 'Inactivo'}`);
+            });
+        } else {
+            console.log('❌ No se encontraron productos relacionados con ninguna estrategia');
+        }
+        
+        return relatedProducts;
+
+    } catch (error) {
+        console.error('❌ Error obteniendo productos relacionados:', error);
+        return [];
     }
+}
 
     // Mantener métodos específicos de negocio
     async getProductStats() {
