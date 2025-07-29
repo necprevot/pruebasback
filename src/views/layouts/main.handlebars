@@ -13,7 +13,7 @@
             <div>
                 <h1>BBFermentos</h1>
                 <nav>
-                    <a href="/products">Catálogo</a> <!-- Era "/" ahora es "/products" -->
+                    <a href="/products">Catálogo</a> 
                     <a href="/realtimeproducts">Productos en Tiempo Real</a>
                     <a href="#" onclick="goToCart()">🛒 Ver Mi Carrito</a>
                 </nav>
@@ -30,7 +30,7 @@
     </footer>
 
     <script>
-        // Función global para ir al carrito desde cualquier página
+        // Función para ir al carrito desde cualquier página
         function goToCart() {
             const cartId = localStorage.getItem('bbfermentos_cart_id');
             if (cartId) {

@@ -176,14 +176,14 @@
                     class="quantity-input">
             </div>
 
-            <!-- BOTONES DE ACCIÓN MEJORADOS -->
+            <!-- BOTONES DE ACCIÓN -->
             <div class="product-actions">
                 <button onclick="addToCart('{{this._id}}', '{{this.title}}', {{this.price}}, {{this.stock}})"
                     class="btn-success add-to-cart-btn">
                     🛒 Agregar al Carrito
                 </button>
 
-                <!-- NUEVO BOTÓN PARA VER DETALLES -->
+                <!-- BOTÓN PARA VER DETALLES -->
                 <a href="/products/{{this._id}}" class="btn-info view-details-btn">
                     👁️ Ver Detalles
                 </a>
@@ -258,7 +258,7 @@
 </div>
 {{/if}}
 
-<!-- Modal del carrito (mantener existente) -->
+<!-- Modal del carrito -->
 <div id="cartModal"
     style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
     <div
@@ -286,11 +286,11 @@
 </div>
 
 <script>
-    // Variables globales (mantener del archivo original)
+    // Variables globales
     let currentCartId = null;
     let cartItems = [];
 
-    // Funciones de gestión de carrito persistente (mantener todas del original)
+    // Funciones de gestión de carrito persistente
     const CartSession = {
         save: function (cartId) {
             localStorage.setItem('bbfermentos_cart_id', cartId);
@@ -380,7 +380,6 @@
         });
     }
 
-    // Mantener todas las funciones de carrito del archivo original
     async function initializeCart() {
         try {
             console.log('🚀 Inicializando carrito...');

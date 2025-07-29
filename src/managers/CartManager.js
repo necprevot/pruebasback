@@ -4,10 +4,10 @@ import Product from '../models/Product.js';
 
 class CartManager extends BaseManager {
     constructor() {
-        super(Cart); // Pasar el modelo Cart al BaseManager
+        super(Cart); 
     }
 
-    // Crear un carrito - mantener compatibilidad con tu método original
+    // Crear un carrito 
     async createCart() {
         const newCart = {
             products: []
@@ -15,7 +15,7 @@ class CartManager extends BaseManager {
         return await this.add(newCart);
     }
 
-    // Obtener carrito por ID con populate - mantener compatibilidad
+    // Obtener carrito por ID con populate
     async getCartById(cartId) {
         try {
             const cart = await this.model.findById(cartId).populate('products.product');
@@ -33,7 +33,7 @@ class CartManager extends BaseManager {
         }
     }
 
-    // Tu método original - mantener la misma lógica
+    // Tu método original 
     async addProductToCart(cartId, productId) {
         try {
             // Verificar que el producto existe
@@ -53,10 +53,10 @@ class CartManager extends BaseManager {
             );
 
             if (existingProductIndex !== -1) {
-                // Si existe, incrementar cantidad en 1 (tu lógica original)
+                // Si existe, incrementar cantidad en 1 
                 cart.products[existingProductIndex].quantity += 1;
             } else {
-                // Si no existe, agregar con cantidad 1 (tu lógica original)
+                // Si no existe, agregar con cantidad 1 
                 cart.products.push({
                     product: productId,
                     quantity: 1

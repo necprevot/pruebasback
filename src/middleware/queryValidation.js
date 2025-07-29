@@ -1,6 +1,7 @@
 export const validateProductQuery = (req, res, next) => {
     try {
         const query = req.query;
+        console.log('🔍 Query original recibido:', query);
 
         // Validar y sanitizar page
         if (query.page) {
@@ -8,8 +9,10 @@ export const validateProductQuery = (req, res, next) => {
             if (isNaN(page) || page < 1) {
                 query.page = 1;
             } else {
-                query.page = Math.min(page, 1000); // Máximo 1000 páginas
+                query.page = Math.min(page, 100); 
             }
+        } else {
+            query.page = 1; 
         }
 
         // Validar y sanitizar limit
@@ -18,18 +21,20 @@ export const validateProductQuery = (req, res, next) => {
             if (isNaN(limit) || limit < 1) {
                 query.limit = 10;
             } else {
-                query.limit = Math.min(limit, 100); // Máximo 100 items por página
+                query.limit = Math.min(limit, 100); 
             }
+        } else {
+            query.limit = 10; 
         }
 
         // Validar sort
         if (query.sort) {
             const validSorts = [
                 'price_asc', 'price_desc', 'title_asc', 'title_desc', 
-                'stock_asc', 'stock_desc', 'newest', 'oldest', 'category_asc'
+                'stock_asc', 'stock_desc', 'newest', 'oldest', 'category_asc', 'status_desc'
             ];
             if (!validSorts.includes(query.sort)) {
-                delete query.sort;
+                query.sort = 'status_desc'; 
             }
         }
 
@@ -41,8 +46,21 @@ export const validateProductQuery = (req, res, next) => {
             }
         }
 
+        // Validar status
+        if (query.status !== undefined) {
+            if (query.status === 'true' || query.status === true) {
+                query.status = 'true';
+            } else if (query.status === 'false' || query.status === false) {
+                query.status = 'false';
+            } else if (query.status === 'all' || query.status === '') {
+                delete query.status; 
+            } else {
+                delete query.status; 
+            }
+        }
+
         // Validar y sanitizar precios
-        if (query.minPrice) {
+        if (query.minPrice !== undefined && query.minPrice !== '') {
             const minPrice = parseFloat(query.minPrice);
             if (isNaN(minPrice) || minPrice < 0) {
                 delete query.minPrice;
@@ -51,7 +69,7 @@ export const validateProductQuery = (req, res, next) => {
             }
         }
 
-        if (query.maxPrice) {
+        if (query.maxPrice !== undefined && query.maxPrice !== '') {
             const maxPrice = parseFloat(query.maxPrice);
             if (isNaN(maxPrice) || maxPrice < 0) {
                 delete query.maxPrice;
@@ -61,36 +79,58 @@ export const validateProductQuery = (req, res, next) => {
         }
 
         // Validar que minPrice <= maxPrice
-        if (query.minPrice && query.maxPrice && query.minPrice > query.maxPrice) {
+        if (query.minPrice !== undefined && query.maxPrice !== undefined && query.minPrice > query.maxPrice) {
             delete query.minPrice;
             delete query.maxPrice;
         }
 
         // Sanitizar búsqueda
-        if (query.search) {
-            query.search = query.search.toString().trim().substring(0, 100); // Max 100 caracteres
-            if (query.search.length === 0) {
+        if (query.search !== undefined) {
+            if (typeof query.search === 'string') {
+                query.search = query.search.trim().substring(0, 100); 
+                if (query.search.length === 0) {
+                    delete query.search;
+                }
+            } else {
                 delete query.search;
             }
         }
 
         // Sanitizar categoría
-        if (query.category) {
-            query.category = query.category.toString().trim().substring(0, 50);
-            if (query.category.length === 0 || query.category === 'all') {
+        if (query.category !== undefined) {
+            if (typeof query.category === 'string') {
+                query.category = query.category.trim().substring(0, 50);
+                if (query.category.length === 0 || query.category === 'all') {
+                    delete query.category;
+                }
+            } else {
                 delete query.category;
             }
         }
 
+        // Sanitizar campos específicos
+        if (query.fields !== undefined) {
+            if (typeof query.fields === 'string') {
+                query.fields = query.fields.trim();
+                if (query.fields.length === 0) {
+                    delete query.fields;
+                }
+            } else {
+                delete query.fields;
+            }
+        }
+
+        console.log('✅ Query validado y sanitizado:', query);
         req.query = query;
         next();
 
     } catch (error) {
-        console.error('Error en validación de query:', error);
+        console.error('❌ Error en validación de query:', error);
         // En caso de error, usar valores por defecto
         req.query = {
             page: 1,
-            limit: 10
+            limit: 10,
+            sort: 'status_desc'
         };
         next();
     }

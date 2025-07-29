@@ -23,7 +23,7 @@ const connectDB = async () => {
     const options = {
       serverSelectionTimeoutMS: 10000, // 10 segundos timeout
       socketTimeoutMS: 45000,
-      family: 4 // Forzar IPv4
+      family: 4 
     };
     
     await mongoose.connect(uri, options);
@@ -47,7 +47,6 @@ const connectDB = async () => {
     console.error('💥 Error conectando a MongoDB:', error.message);
     console.error('🔧 Detalles del error:', error);
     
-    // No hacer process.exit(1) para poder ver más errores
     console.log('⚠️ Continuando sin conexión a base de datos...');
   }
 };

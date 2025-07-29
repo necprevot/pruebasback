@@ -1,5 +1,3 @@
-import mongoose from 'mongoose';
-
 class BaseManager {
     constructor(model) {
         this.model = model;
@@ -68,8 +66,8 @@ class BaseManager {
                 id,
                 updatedItem,
                 { 
-                    new: true, // Retorna el documento actualizado
-                    runValidators: true // Ejecuta las validaciones del schema
+                    new: true, 
+                    runValidators: true 
                 }
             );
             

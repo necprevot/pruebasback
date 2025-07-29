@@ -138,7 +138,7 @@ function calculateTotals() {
         const price = parseFloat(item.dataset.price);
         
         if (quantityInput && price) {
-            // NUEVA LÓGICA: Usar el valor actual del input, no el dataset
+
             const quantity = parseInt(quantityInput.value) || 0;
             const subtotal = price * quantity;
             
@@ -152,21 +152,21 @@ function calculateTotals() {
             totalItems += quantity;
             totalAmount += subtotal;
             
-            // NUEVO: Actualizar subtotal individual inmediatamente
+
             const subtotalElement = item.querySelector(`#subtotal-${item.dataset.productId}`);
             if (subtotalElement) {
                 subtotalElement.textContent = Math.round(subtotal);
                 console.log(`💰 Subtotal actualizado para ${item.dataset.productId}: ${subtotal}`);
             }
             
-            // NUEVO: Actualizar el dataset para mantener sincronización
+
             item.dataset.quantity = quantity;
         }
     });
     
     console.log('📊 Totales calculados:', { totalItems, totalAmount });
     
-    // Actualizar UI total
+
     const totalItemsElement = document.getElementById('totalItems');
     const calculatedTotalElement = document.getElementById('calculatedTotal');
     
@@ -194,7 +194,7 @@ async function syncWithServer() {
             
             console.log('📡 Datos del servidor:', serverCart);
             
-            // Verificar si hay diferencias y corregir si es necesario
+
             serverCart.products.forEach(serverItem => {
                 const quantityInput = document.getElementById(`quantity-${serverItem.product._id}`);
                 const clientQuantity = parseInt(quantityInput?.value || 0);
@@ -208,7 +208,7 @@ async function syncWithServer() {
                 }
             });
             
-            // Recalcular después de sincronizar
+
             calculateTotals();
         }
     } catch (error) {
@@ -272,14 +272,14 @@ async function updateQuantity(productId, newQuantity) {
         if (response.ok) {
             console.log('✅ Cantidad actualizada en servidor');
             
-            // NUEVO: Actualizar el dataset del elemento inmediatamente
+            // Actualizar el dataset del elemento inmediatamente
             const productItem = document.querySelector(`[data-product-id="${productId}"]`);
             if (productItem) {
                 productItem.dataset.quantity = newQuantity;
                 console.log(`📦 Dataset actualizado: quantity=${newQuantity}`);
             }
             
-            // NUEVO: Actualizar el input visualmente
+            // Actualizar el input visualmente
             const quantityInput = document.getElementById(`quantity-${productId}`);
             if (quantityInput) {
                 quantityInput.value = newQuantity;
@@ -392,13 +392,13 @@ function proceedToCheckout() {
         return;
     }
     showAlert('Función de checkout en desarrollo', 'info');
-    // TODO: Implementar checkout
+    // Implementar checkout
 }
 
 // Guardar para después
 function saveForLater() {
     showAlert('Carrito guardado en tu cuenta', 'success');
-    // TODO: Implementar guardar para después
+    // Implementar guardar para después
 }
 
 // Mostrar alertas
@@ -426,7 +426,7 @@ function showAlert(message, type) {
 console.log('🛒 Carrito ID:', cartId);
 console.log('📊 Información de debug disponible en window.cartDebug');
 
-// Función de debug global
+// Función de debug
 window.cartDebug = function() {
     const productItems = document.querySelectorAll('.cart-product-item');
     console.log('=== CART DEBUG INFO ===');
@@ -501,11 +501,11 @@ document.addEventListener('DOMContentLoaded', function() {
         calculateTotals();
     }, 100);
     
-    // Sincronizar con servidor cada 30 segundos (opcional)
+
     setInterval(syncWithServer, 30000);
 });
 
-// NUEVA FUNCIÓN: Debug mejorado
+// Debug
 window.cartDebugAdvanced = function() {
     console.log('=== CART DEBUG AVANZADO ===');
     

@@ -15,7 +15,7 @@ const cartSchema = new mongoose.Schema({
     }
   }]
 }, {
-  timestamps: true, // Agrega createdAt y updatedAt automáticamente
+  timestamps: true, 
   versionKey: false
 });
 

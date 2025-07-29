@@ -184,7 +184,6 @@ const helpers = {
         return JSON.stringify(context, null, 2);
     },
 
-    // HELPER ESPECÍFICO QUE FALTABA PARA getTotalItems
     getTotalItems: function(products) {
         console.log('🔢 getTotalItems helper called with:', products);
         
