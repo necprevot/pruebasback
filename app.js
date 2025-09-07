@@ -2,12 +2,14 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import dotenv from 'dotenv';
+import passport from 'passport';
 
 // Configuraciones
 import connectDB, { waitForConnection } from './src/config/database.js';
 import { configureExpress } from './src/config/express.js';
 import { configureHandlebars } from './src/config/handlebars.js';
 import { configureWebSockets } from './src/config/websockets.js';
+import { initializePassport } from './src/config/passport.js';
 
 // Middleware
 import { globalErrorHandler, notFoundHandler } from './src/middleware/errorHandler.js';
@@ -16,6 +18,8 @@ import { globalErrorHandler, notFoundHandler } from './src/middleware/errorHandl
 import productsRouter from './src/routes/products.router.js';
 import cartsRouter from './src/routes/carts.router.js';
 import viewsRouter from './src/routes/views.router.js';
+import usersRouter from './src/routes/users.router.js';
+import sessionsRouter from './src/routes/sessions.router.js';
 
 // Utils
 import { logger } from './src/utils/logger.js';
@@ -31,6 +35,10 @@ const startServer = async () => {
         const httpServer = createServer(app);
         const io = new Server(httpServer);
 
+        app.use(express.json());
+        app.use(express.urlencoded({ extended: true }));
+
+
         // Configurar aplicación
         configureExpress(app);
         configureHandlebars(app);
@@ -38,7 +46,7 @@ const startServer = async () => {
         // CONECTAR BASE DE DATOS ANTES DE CONFIGURAR RUTAS
         console.log('🔌 Conectando a base de datos...');
         await connectDB();
-        
+
         // ESPERAR A QUE LA CONEXIÓN ESTÉ LISTA
         await waitForConnection();
         console.log('✅ Base de datos lista, configurando rutas...');
@@ -52,9 +60,13 @@ const startServer = async () => {
         // Configurar WebSockets
         configureWebSockets(io);
 
+        app.use('/api/users', usersRouter);
+        app.use('/api/sessions', sessionsRouter);
+
         // Manejo de errores
-        app.use(globalErrorHandler);
         app.use('*', notFoundHandler);
+        app.use(globalErrorHandler);
+        
 
         // Iniciar servidor
         const PORT = process.env.PORT || 8080;
@@ -62,6 +74,10 @@ const startServer = async () => {
             logger.success(`Servidor iniciado en puerto ${PORT}`);
             logger.info(`Accede desde: http://localhost:${PORT}`);
         });
+
+        // inicializar passport
+        initializePassport(passport);
+        app.use(passport.initialize());
 
     } catch (error) {
         console.error('💥 Error fatal iniciando servidor:', error);

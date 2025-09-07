@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import ProductManager from '../managers/ProductManager.js';
 import { validateProductQuery } from '../middleware/queryValidation.js';
+import passport from "passport";
+import { authorize } from "../middleware/auth.js";
+
 
 const router = Router();
 const productManager = new ProductManager();
