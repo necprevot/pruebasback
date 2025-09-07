@@ -3,6 +3,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import dotenv from 'dotenv';
 import passport from 'passport';
+import cookieParser from 'cookie-parser';
 
 // Configuraciones
 import connectDB, { waitForConnection } from './src/config/database.js';
@@ -30,57 +31,50 @@ dotenv.config();
 // Función principal asíncrona
 const startServer = async () => {
     try {
-        // Crear aplicación
         const app = express();
         const httpServer = createServer(app);
         const io = new Server(httpServer);
 
+        // Middlewares básicos
         app.use(express.json());
         app.use(express.urlencoded({ extended: true }));
-
-
-        // Configurar aplicación
+        app.use(cookieParser()); 
+        
+        // Configurar Express y Handlebars
         configureExpress(app);
         configureHandlebars(app);
-
-        // CONECTAR BASE DE DATOS ANTES DE CONFIGURAR RUTAS
-        console.log('🔌 Conectando a base de datos...');
+        
+        // Conectar DB
         await connectDB();
-
-        // ESPERAR A QUE LA CONEXIÓN ESTÉ LISTA
         await waitForConnection();
-        console.log('✅ Base de datos lista, configurando rutas...');
-
-        // Configurar rutas DESPUÉS de que la DB esté conectada
+        
+        // Inicializar Passport
+        initializePassport();
+        app.use(passport.initialize());
+        
+        
+        // Configurar rutas
         app.set('io', io);
         app.use('/', viewsRouter);
         app.use('/api/products', productsRouter);
         app.use('/api/carts', cartsRouter);
-
-        // Configurar WebSockets
-        configureWebSockets(io);
-
         app.use('/api/users', usersRouter);
         app.use('/api/sessions', sessionsRouter);
-
-        // Manejo de errores
+        
+        // WebSockets
+        configureWebSockets(io);
+        
+        // Error handlers
         app.use('*', notFoundHandler);
         app.use(globalErrorHandler);
         
-
         // Iniciar servidor
         const PORT = process.env.PORT || 8080;
         httpServer.listen(PORT, '0.0.0.0', () => {
             logger.success(`Servidor iniciado en puerto ${PORT}`);
-            logger.info(`Accede desde: http://localhost:${PORT}`);
         });
-
-        // inicializar passport
-        initializePassport(passport);
-        app.use(passport.initialize());
-
     } catch (error) {
-        console.error('💥 Error fatal iniciando servidor:', error);
+        console.error('💥 Error fatal:', error);
         process.exit(1);
     }
 };
