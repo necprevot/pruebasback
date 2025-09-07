@@ -400,4 +400,63 @@ router.get('/products/:pid', async (req, res) => {
     }
 });
 
+// Ruta de Login
+router.get('/login', (req, res) => {
+    try {
+        res.render('login', {
+            title: 'Iniciar Sesión',
+            isDevelopment: process.env.NODE_ENV === 'development'
+        });
+    } catch (error) {
+        console.error('❌ Error en ruta login:', error);
+        res.render('login', {
+            title: 'Iniciar Sesión',
+            error: 'Error al cargar la página de login',
+            isDevelopment: process.env.NODE_ENV === 'development'
+        });
+    }
+});
+
+// Ruta de Registro
+router.get('/register', (req, res) => {
+    try {
+        res.render('register', {
+            title: 'Crear Cuenta',
+            isDevelopment: process.env.NODE_ENV === 'development'
+        });
+    } catch (error) {
+        console.error('❌ Error en ruta register:', error);
+        res.render('register', {
+            title: 'Crear Cuenta',
+            error: 'Error al cargar la página de registro',
+            isDevelopment: process.env.NODE_ENV === 'development'
+        });
+    }
+});
+
+// Ruta de Perfil (protegida) - OPCIONAL
+router.get('/profile', async (req, res) => {
+    try {
+        // En una implementación real, verificarías la autenticación aquí
+        // Por ahora, renderizamos una página básica
+        res.render('profile', {
+            title: 'Mi Perfil',
+            user: {
+                first_name: 'Usuario',
+                last_name: 'Demo',
+                email: 'usuario@demo.com'
+            }
+        });
+    } catch (error) {
+        console.error('❌ Error en ruta profile:', error);
+        res.redirect('/login');
+    }
+});
+
+// Ruta de Logout (GET para simplificar)
+router.get('/logout', (req, res) => {
+    // En el frontend se manejará la limpieza del localStorage
+    res.redirect('/login?message=logged_out');
+});
+
 export default router;
