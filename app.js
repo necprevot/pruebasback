@@ -35,25 +35,29 @@ const startServer = async () => {
         const httpServer = createServer(app);
         const io = new Server(httpServer);
 
-        // Middlewares básicos
+        // Middlewares básicos PRIMERO
         app.use(express.json());
         app.use(express.urlencoded({ extended: true }));
-        app.use(cookieParser()); 
+        app.use(cookieParser()); // Opcional si usas cookies
         
         // Configurar Express y Handlebars
         configureExpress(app);
         configureHandlebars(app);
         
-        // Conectar DB
+        // IMPORTANTE: Conectar DB ANTES de inicializar Passport
+        console.log('🔌 Conectando a base de datos...');
         await connectDB();
         await waitForConnection();
+        console.log('✅ Base de datos conectada');
         
-        // Inicializar Passport
+        // Inicializar Passport DESPUÉS de conectar DB
+        console.log('🔐 Inicializando Passport...');
         initializePassport();
         app.use(passport.initialize());
+        // NO uses passport.session() porque estás usando JWT (stateless)
+        console.log('✅ Passport inicializado');
         
-        
-        // Configurar rutas
+        // Configurar rutas DESPUÉS de passport
         app.set('io', io);
         app.use('/', viewsRouter);
         app.use('/api/products', productsRouter);
@@ -71,7 +75,8 @@ const startServer = async () => {
         // Iniciar servidor
         const PORT = process.env.PORT || 8080;
         httpServer.listen(PORT, '0.0.0.0', () => {
-            logger.success(`Servidor iniciado en puerto ${PORT}`);
+            console.log(`✅ Servidor iniciado en puerto ${PORT}`);
+            console.log(`📍 Accede desde: http://localhost:${PORT}`);
         });
     } catch (error) {
         console.error('💥 Error fatal:', error);

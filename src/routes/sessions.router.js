@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { findByEmail } from '../services/UserService.js';
 import { authenticate } from '../middleware/auth.js';
+import passport from "passport";
 
 dotenv.config();
 
@@ -16,13 +17,15 @@ router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
     
+    // Validación de campos
     if (!email || !password) {
       return res.status(400).json({ 
         status: 'error', 
-        message: 'Email y contraseña son requeridos' 
+        message: 'Email y password son requeridos' 
       });
     }
 
+    // Buscar usuario por email
     const user = await findByEmail(email);
     if (!user) {
       return res.status(401).json({ 
@@ -31,45 +34,43 @@ router.post('/login', async (req, res, next) => {
       });
     }
 
-    const match = bcrypt.compareSync(password, user.password);
-    if (!match) {
+    // Verificar contraseña con bcrypt
+    const isValidPassword = bcrypt.compareSync(password, user.password);
+    if (!isValidPassword) {
       return res.status(401).json({ 
         status: 'error', 
         message: 'Credenciales inválidas' 
       });
     }
 
+    // Generar JWT con los datos del usuario
     const tokenPayload = {
-      id: user._id,
+      id: user._id.toString(),
       email: user.email,
       role: user.role,
       first_name: user.first_name,
       last_name: user.last_name
     };
 
-    const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+    const token = jwt.sign(tokenPayload, JWT_SECRET, { 
+      expiresIn: JWT_EXPIRES 
+    });
 
-    // Quitar password del objeto user
+    // Preparar respuesta sin contraseña
     const userResponse = {
       _id: user._id,
       first_name: user.first_name,
       last_name: user.last_name,
       email: user.email,
+      age: user.age,
       role: user.role,
       cart: user.cart
     };
 
-    // Opción 1: Enviar token en cookie (más seguro)
-    res.cookie('jwt', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000 // 24 horas
-    });
-
-    // Opción 2: También enviar en la respuesta para el frontend
+    // Responder con el token y datos del usuario
     res.json({ 
       status: 'success', 
+      message: 'Login exitoso',
       payload: { 
         token, 
         user: userResponse 
@@ -77,41 +78,38 @@ router.post('/login', async (req, res, next) => {
     });
     
   } catch (err) {
+    console.error('Error en login:', err);
     next(err);
   }
 });
 
 // Logout
 router.post('/logout', (req, res) => {
-  res.clearCookie('jwt');
   res.json({ 
     status: 'success', 
-    message: 'Sesión cerrada correctamente' 
+    message: 'Logout exitoso - Por favor elimina el token del cliente' 
   });
 });
 
 // Current user - usa el middleware authenticate
-router.get('/current', authenticate, (req, res) => {
-  if (!req.user) {
-    return res.status(401).json({ 
-      status: 'error', 
-      message: 'No autorizado' 
+router.get('/current', 
+  passport.authenticate('current', { session: false }), 
+  (req, res) => {
+    // Si llegamos aquí, el token es válido y req.user tiene los datos
+    if (!req.user) {
+      return res.status(401).json({ 
+        status: 'error', 
+        message: 'No autorizado - Token inválido o inexistente' 
+      });
+    }
+
+    // Devolver datos del usuario asociados al JWT
+    res.json({ 
+      status: 'success',
+      message: 'Usuario validado correctamente',
+      payload: req.user 
     });
   }
-
-  const userResponse = {
-    _id: req.user._id,
-    first_name: req.user.first_name,
-    last_name: req.user.last_name,
-    email: req.user.email,
-    role: req.user.role,
-    cart: req.user.cart
-  };
-
-  res.json({ 
-    status: 'success', 
-    payload: userResponse 
-  });
-});
+);
 
 export default router;

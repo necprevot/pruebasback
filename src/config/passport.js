@@ -16,53 +16,70 @@ const cookieExtractor = (req) => {
 };
 
 export const initializePassport = () => {
-  // Estrategia JWT desde Bearer Token (Headers)
-  const jwtOptions = {
+  // Estrategia JWT principal
+  const opts = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     secretOrKey: JWT_SECRET,
   };
 
-  passport.use('jwt', new JwtStrategy(jwtOptions, async (jwt_payload, done) => {
+  passport.use('jwt', new JwtStrategy(opts, async (jwt_payload, done) => {
     try {
-      const user = await User.findById(jwt_payload.id).select('-password').populate('cart');
+      console.log('JWT Payload recibido:', jwt_payload);
+      
+      const user = await User.findById(jwt_payload.id)
+        .select('-password')
+        .populate('cart')
+        .lean();
+      
       if (!user) {
         return done(null, false, { message: 'Usuario no encontrado' });
       }
+      
       return done(null, user);
     } catch (err) {
+      console.error('Error en estrategia JWT:', err);
       return done(err, false);
     }
   }));
 
-  // Estrategia JWT desde Cookies
-  const jwtCookieOptions = {
-    jwtFromRequest: cookieExtractor,
-    secretOrKey: JWT_SECRET,
-  };
 
-  passport.use('jwt-cookie', new JwtStrategy(jwtCookieOptions, async (jwt_payload, done) => {
+  passport.use('current', new JwtStrategy(opts, async (jwt_payload, done) => {
     try {
-      const user = await User.findById(jwt_payload.id).select('-password').populate('cart');
-      if (!user) {
-        return done(null, false, { message: 'Usuario no encontrado' });
+      console.log('Estrategia CURRENT - JWT Payload:', jwt_payload);
+      
+      // Validar que el token tiene la información necesaria
+      if (!jwt_payload.id) {
+        return done(null, false, { message: 'Token inválido' });
       }
-      return done(null, user);
+      
+      // Buscar usuario y devolver sus datos asociados al JWT
+      const user = await User.findById(jwt_payload.id)
+        .select('-password')
+        .populate('cart')
+        .lean();
+      
+      if (!user) {
+        return done(null, false, { message: 'Usuario no existe' });
+      }
+      
+      // Devolver datos del usuario asociados al JWT
+      const userData = {
+        _id: user._id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        age: user.age,
+        role: user.role,
+        cart: user.cart,
+        // Incluir información del JWT
+        jwt_issued_at: new Date(jwt_payload.iat * 1000),
+        jwt_expires_at: new Date(jwt_payload.exp * 1000)
+      };
+      
+      return done(null, userData);
     } catch (err) {
+      console.error('Error en estrategia CURRENT:', err);
       return done(err, false);
     }
   }));
-
-  // Serialización (si usas sesiones también)
-  passport.serializeUser((user, done) => {
-    done(null, user._id);
-  });
-
-  passport.deserializeUser(async (id, done) => {
-    try {
-      const user = await User.findById(id).select('-password');
-      done(null, user);
-    } catch (error) {
-      done(error, null);
-    }
-  });
 };
