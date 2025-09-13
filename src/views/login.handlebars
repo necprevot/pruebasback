@@ -87,35 +87,10 @@
     </div>
 </div>
 
-<!-- Demo Users (Solo para desarrollo) -->
-{{#if isDevelopment}}
-<div class="demo-users">
-    <h4>👨‍💻 Usuarios de Prueba</h4>
-    <div class="demo-buttons">
-        <button onclick="fillDemoUser('admin')" class="btn-demo">
-            👑 Admin Demo
-        </button>
-        <button onclick="fillDemoUser('user')" class="btn-demo">
-            👤 Usuario Demo
-        </button>
-    </div>
-</div>
-{{/if}}
-
 <script src="/js/auth.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     initializeLoginForm();
 });
 
-// Demo users para desarrollo
-function fillDemoUser(type) {
-    if (type === 'admin') {
-        document.getElementById('email').value = 'admin@bbfermentos.com';
-        document.getElementById('password').value = 'admin123';
-    } else {
-        document.getElementById('email').value = 'user@bbfermentos.com';
-        document.getElementById('password').value = 'user123';
-    }
-}
 </script>

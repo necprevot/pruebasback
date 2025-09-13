@@ -9,7 +9,7 @@ const userSchema = new Schema({
   age:        { type: Number },
   password:   { type: String, required: true }, // guardaremos el hash
   cart:       { type: mongoose.Schema.Types.ObjectId, ref: 'Cart' }, // asume que ya tienes modelo Cart
-  role:       { type: String, enum: ['user','admin','premium'], default: 'user' }
+  role:       { type: String, enum: ['user','admin'], default: 'user' }
 }, { timestamps: true });
 
 export default model('User', userSchema);
