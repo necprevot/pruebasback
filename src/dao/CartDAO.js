@@ -1,18 +1,13 @@
 import BaseDAO from './BaseDAO.js';
 import Cart from '../models/Cart.js';
 
-/**
- * DAO para carritos - Soporte para el campo 'cart' del usuario
- */
+
 class CartDAO extends BaseDAO {
     constructor() {
         super(Cart);
     }
 
-    /**
-     * Crear carrito vacío para nuevo usuario
-     * CRITERIO: Modelo de Usuario con referencia a Carts
-     */
+
     async createEmptyCart() {
         try {
             console.log('🛒 [CartDAO] Creando carrito vacío para nuevo usuario');
@@ -29,9 +24,6 @@ class CartDAO extends BaseDAO {
         }
     }
 
-    /**
-     * Obtener carrito con productos
-     */
     async getCartWithProducts(cartId) {
         try {
             console.log('🛒 [CartDAO] Obteniendo carrito con productos:', cartId);

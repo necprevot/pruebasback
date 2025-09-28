@@ -2,21 +2,12 @@ import BaseDAO from './BaseDAO.js';
 import User from '../models/User.js';
 import mongoose from 'mongoose';
 
-/**
- * DAO para gestión de usuarios - Cumple criterios de evaluación
- * - Maneja modelo User con campos requeridos
- * - Integra con sistema de autenticación JWT
- * - Soporte para estrategias de Passport
- */
+
 class UserDAO extends BaseDAO {
     constructor() {
         super(User);
     }
 
-    /**
-     * Crear usuario con validaciones específicas
-     * CRITERIO: Modelo de Usuario con campos especificados
-     */
     async createUser(userData) {
         try {
             // Validar campos requeridos según evaluación
@@ -48,10 +39,6 @@ class UserDAO extends BaseDAO {
         }
     }
 
-    /**
-     * Buscar usuario por email - ESENCIAL para autenticación
-     * CRITERIO: Sistema de Login
-     */
     async findByEmail(email) {
         try {
             console.log('🔍 [UserDAO] Buscando usuario por email:', email);
@@ -73,10 +60,6 @@ class UserDAO extends BaseDAO {
         }
     }
 
-    /**
-     * Buscar usuario por email INCLUYENDO password 
-     * CRITERIO: Sistema de Login con JWT
-     */
     async findByEmailWithPassword(email) {
         try {
             console.log('🔍 [UserDAO] Buscando usuario con password para login:', email);
@@ -99,10 +82,6 @@ class UserDAO extends BaseDAO {
         }
     }
 
-    /**
-     * Buscar usuario por ID para estrategia JWT "current"
-     * CRITERIO: Estrategia "Current" y Endpoint /api/sessions/current
-     */
     async findByIdForJWT(userId) {
         try {
             console.log('🎫 [UserDAO] Buscando usuario por ID para JWT:', userId);
@@ -125,10 +104,6 @@ class UserDAO extends BaseDAO {
         }
     }
 
-    /**
-     * Verificar si un usuario existe por ID (para validaciones JWT)
-     * CRITERIO: Validación de token JWT
-     */
     async existsById(userId) {
         try {
             if (!mongoose.Types.ObjectId.isValid(userId)) {

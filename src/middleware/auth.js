@@ -1,10 +1,5 @@
 import passport from 'passport';
 
-/**
- * CRITERIO: Middleware de autenticación con JWT
- */
-
-// Middleware de autenticación principal
 export const authenticate = (req, res, next) => {
     console.log('🔐 [Auth] Verificando autenticación JWT');
     
@@ -19,6 +14,7 @@ export const authenticate = (req, res, next) => {
         
         if (!user) {
             console.log('❌ [Auth] Token inválido o usuario no encontrado');
+            console.log('❌ [Auth] Info:', info);
             return res.status(401).json({
                 status: 'error',
                 message: 'No autenticado - Token inválido'

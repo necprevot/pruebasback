@@ -9,14 +9,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret_for_dev';
 // Instanciar DAO para usar en estrategias
 const userDAO = new UserDAO();
 
-/**
- * CRITERIO: Estrategias de Passport para el modelo de usuarios
- * Implementa las estrategias requeridas para la evaluación
- */
+
 export const initializePassport = () => {
     console.log('🔐 [Passport] Inicializando estrategias para evaluación...');
 
-    // CRITERIO: Estrategia JWT principal para autenticación
+    // Estrategia JWT principal para autenticación
     const jwtOptions = {
         jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
         secretOrKey: JWT_SECRET,
@@ -30,7 +27,7 @@ export const initializePassport = () => {
                 role: jwt_payload.role
             });
             
-            // CRITERIO: Usar DAO para buscar usuario
+            // Usar DAO para buscar usuario
             const user = await userDAO.findByIdForJWT(jwt_payload.id);
             
             if (!user) {
@@ -46,7 +43,7 @@ export const initializePassport = () => {
         }
     }));
 
-    // CRITERIO: Estrategia "current" para endpoint /api/sessions/current
+    // Estrategia "current" para endpoint /api/sessions/current
     passport.use('current', new JwtStrategy(jwtOptions, async (jwt_payload, done) => {
         try {
             console.log('👤 [Passport-Current] Validando usuario actual:', jwt_payload.id);
@@ -57,7 +54,7 @@ export const initializePassport = () => {
                 return done(null, false, { message: 'Token inválido' });
             }
             
-            // CRITERIO: Usar DAO para obtener datos del usuario asociado al JWT
+            // Usar DAO para obtener datos del usuario asociado al JWT
             const user = await userDAO.findByIdForJWT(jwt_payload.id);
             
             if (!user) {
@@ -65,7 +62,7 @@ export const initializePassport = () => {
                 return done(null, false, { message: 'Usuario no existe' });
             }
             
-            // CRITERIO: Devolver datos del usuario asociados al JWT
+            // Devolver datos del usuario asociados al JWT
             const userData = {
                 _id: user._id,
                 first_name: user.first_name,

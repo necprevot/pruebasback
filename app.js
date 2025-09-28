@@ -5,27 +5,27 @@ import dotenv from 'dotenv';
 import passport from 'passport';
 import cookieParser from 'cookie-parser';
 
-// Configuraciones
+
 import connectDB, { waitForConnection } from './src/config/database.js';
 import { configureExpress } from './src/config/express.js';
 import { configureHandlebars } from './src/config/handlebars.js';
 import { configureWebSockets } from './src/config/websockets.js';
 import { initializePassport } from './src/config/passport.js';
 
-// Middleware
+
 import { globalErrorHandler, notFoundHandler } from './src/middleware/errorHandler.js';
 
-// Rutas PARA EVALUACIÓN
+
 import productsRouter from './src/routes/products.router.js';
 import cartsRouter from './src/routes/carts.router.js';
 import viewsRouter from './src/routes/views.router.js';
-import usersRouter from './src/routes/users.router.js';        // CRUD usuarios
-import sessionsRouter from './src/routes/sessions.router.js';  // Login + /current
+import usersRouter from './src/routes/users.router.js';        
+import sessionsRouter from './src/routes/sessions.router.js';  
 
-// Utils
+
 import { logger } from './src/utils/logger.js';
 
-// Configurar entorno
+
 dotenv.config();
 
 console.log('🚀 === INICIANDO BBFERMENTOS - EVALUACIÓN ===');
@@ -37,35 +37,29 @@ console.log('   ✅ Sistema de Login con JWT');
 console.log('   ✅ Endpoint /api/sessions/current');
 console.log('   ✅ Patrón DAO implementado');
 
-// Función principal asíncrona
 const startServer = async () => {
     try {
         const app = express();
         const httpServer = createServer(app);
         const io = new Server(httpServer);
 
-        // Middlewares básicos PRIMERO
         app.use(express.json());
         app.use(express.urlencoded({ extended: true }));
         app.use(cookieParser());
         
-        // Configurar Express y Handlebars
         configureExpress(app);
         configureHandlebars(app);
         
-        // IMPORTANTE: Conectar DB ANTES de inicializar Passport
         console.log('🔌 Conectando a base de datos...');
         await connectDB();
         await waitForConnection();
         console.log('✅ Base de datos conectada');
         
-        // CRITERIO: Inicializar Passport DESPUÉS de conectar DB
         console.log('🔐 Inicializando estrategias de Passport...');
         initializePassport();
         app.use(passport.initialize());
         console.log('✅ Passport inicializado con estrategias: jwt, current');
         
-        // CRITERIO: Configurar rutas DESPUÉS de passport
         app.set('io', io);
         app.use('/', viewsRouter);
         app.use('/api/products', productsRouter);

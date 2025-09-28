@@ -1,14 +1,9 @@
 import { Router } from 'express';
-import { SessionController } from '../controllers/SessionController.js';
+import SessionController from '../controllers/SessionController.js'; // CORREGIDO: default import
 import passport from "passport";
 
 const router = Router();
 const sessionController = new SessionController();
-
-/**
- * CRITERIO: Sistema de Login con JWT
- * CRITERIO: Ruta /current para validación
- */
 
 // POST /api/sessions/login - Login con JWT
 router.post('/login', (req, res) => {

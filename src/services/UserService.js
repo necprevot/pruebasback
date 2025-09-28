@@ -3,9 +3,7 @@ import jwt from 'jsonwebtoken';
 import UserDAO from '../dao/UserDAO.js';
 import CartDAO from '../dao/CartDAO.js';
 
-/**
- * Servicio de usuarios que cumple con todos los criterios de evaluación
- */
+
 class UserService {
     constructor() {
         this.userDAO = new UserDAO();
@@ -13,19 +11,16 @@ class UserService {
         this.saltRounds = 10;
     }
 
-    /**
-     * Registrar nuevo usuario
-     * CRITERIO: Encriptación de Contraseña con bcrypt.hashSync
-     */
+
     async registerUser(userData) {
         try {
             console.log('👤 [UserService] Iniciando registro de usuario:', userData.email);
             
-            // CRITERIO: Crear carrito para el usuario
+            // Crear carrito para el usuario
             const cart = await this.cartDAO.createEmptyCart();
             console.log('🛒 [UserService] Carrito creado para usuario:', cart._id);
             
-            // CRITERIO: Encriptar contraseña con bcrypt.hashSync
+            // Encriptar contraseña con bcrypt.hashSync
             console.log('🔐 [UserService] Encriptando contraseña con bcrypt.hashSync');
             const hashedPassword = bcrypt.hashSync(userData.password, this.saltRounds);
             console.log('✅ [UserService] Contraseña encriptada correctamente');
@@ -56,10 +51,7 @@ class UserService {
         }
     }
 
-    /**
-     * Autenticar usuario y generar JWT
-     * CRITERIO: Sistema de Login con JWT
-     */
+
     async loginUser(email, password) {
         try {
             console.log('🔐 [UserService] Iniciando login para:', email);
@@ -71,7 +63,7 @@ class UserService {
                 throw new Error('Credenciales inválidas');
             }
             
-            // CRITERIO: Verificar contraseña encriptada
+            // Verificar contraseña encriptada
             console.log('🔍 [UserService] Verificando contraseña con bcrypt');
             const isValidPassword = bcrypt.compareSync(password, user.password);
             
@@ -82,7 +74,7 @@ class UserService {
             
             console.log('✅ [UserService] Contraseña válida, generando JWT');
             
-            // CRITERIO: Generar token JWT
+            // Generar token JWT
             const tokenPayload = {
                 id: user._id.toString(),
                 email: user.email,
@@ -113,10 +105,6 @@ class UserService {
         }
     }
 
-    /**
-     * Obtener usuario actual por ID (para estrategia JWT)
-     * CRITERIO: Estrategia "Current" y Endpoint /current
-     */
     async getCurrentUser(userId) {
         try {
             console.log('👤 [UserService] Obteniendo usuario actual:', userId);
@@ -133,9 +121,7 @@ class UserService {
         }
     }
 
-    /**
-     * Validar si un usuario existe (para estrategias de Passport)
-     */
+
     async validateUserExists(userId) {
         try {
             return await this.userDAO.existsById(userId);

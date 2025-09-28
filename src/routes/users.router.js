@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { UserController } from '../controllers/UserController.js';
-import { authenticate, authorize } from '../middleware/auth.js';
+import UserController from '../controllers/UserController.js'; // CORREGIDO: default import
 import passport from "passport";
 
 const router = Router();
