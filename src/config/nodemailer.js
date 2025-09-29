@@ -41,7 +41,8 @@ const createGmailTransporter = () => {
         return null;
     }
     
-    return nodemailer.createTransporter({
+    // CORREGIDO: usar nodemailer.createTransport (sin 'er' al final)
+    return nodemailer.createTransport({
         service: 'gmail',
         auth: {
             user: user,
@@ -65,7 +66,7 @@ const createOutlookTransporter = () => {
         return null;
     }
     
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
         service: 'hotmail',
         auth: {
             user: user,
@@ -89,7 +90,7 @@ const createYahooTransporter = () => {
         return null;
     }
     
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
         service: 'yahoo',
         auth: {
             user: user,
@@ -113,7 +114,7 @@ const createMailtrapTransporter = () => {
         return null;
     }
     
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
         host: 'sandbox.smtp.mailtrap.io',
         port: 2525,
         auth: {
@@ -134,7 +135,7 @@ const createSendgridTransporter = () => {
         return null;
     }
     
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
         service: 'SendGrid',
         auth: {
             user: 'apikey',

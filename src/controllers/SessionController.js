@@ -1,3 +1,5 @@
+import UserService from '../services/UserService.js'; // AGREGADO: import faltante
+
 class SessionController {
     constructor() {
         this.userService = new UserService();

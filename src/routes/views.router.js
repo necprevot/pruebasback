@@ -350,7 +350,11 @@ router.get('/products/:pid', async (req, res) => {
     }
 });
 
-// Rutas de autenticación
+// ========================================
+// RUTAS DE AUTENTICACIÓN
+// ========================================
+
+// Ruta de login
 router.get('/login', (req, res) => {
     try {
         res.render('login', {
@@ -367,6 +371,7 @@ router.get('/login', (req, res) => {
     }
 });
 
+// Ruta de registro
 router.get('/register', (req, res) => {
     try {
         res.render('register', {
@@ -378,6 +383,49 @@ router.get('/register', (req, res) => {
         res.render('register', {
             title: 'Crear Cuenta',
             error: 'Error al cargar la página de registro',
+            isDevelopment: process.env.NODE_ENV === 'development'
+        });
+    }
+});
+
+// NUEVO: Ruta para solicitar reset de contraseña
+router.get('/forgot-password', (req, res) => {
+    try {
+        res.render('forgotPassword', {
+            title: 'Recuperar Contraseña',
+            isDevelopment: process.env.NODE_ENV === 'development'
+        });
+    } catch (error) {
+        console.error('Error en ruta forgot-password:', error);
+        res.render('forgotPassword', {
+            title: 'Recuperar Contraseña',
+            error: 'Error al cargar la página',
+            isDevelopment: process.env.NODE_ENV === 'development'
+        });
+    }
+});
+
+// NUEVO: Ruta para resetear contraseña con token
+router.get('/reset-password/:token', (req, res) => {
+    try {
+        const { token } = req.params;
+        
+        // Validar que hay token
+        if (!token) {
+            return res.redirect('/forgot-password');
+        }
+        
+        res.render('resetPassword', {
+            title: 'Nueva Contraseña',
+            token: token,
+            isDevelopment: process.env.NODE_ENV === 'development'
+        });
+    } catch (error) {
+        console.error('Error en ruta reset-password:', error);
+        res.render('resetPassword', {
+            title: 'Nueva Contraseña',
+            token: req.params.token || '',
+            error: 'Error al cargar la página',
             isDevelopment: process.env.NODE_ENV === 'development'
         });
     }

@@ -26,6 +26,13 @@ router.get('/current',
     }
 );
 
+// POST /api/sessions/forgot-password - Solicitar reset
+router.post('/forgot-password', (req, res) => {
+    console.log('📍 [Route] POST /api/sessions/forgot-password');
+    sessionController.requestPasswordReset(req, res);
+});
+
+
 // 🧪 ENDPOINT DE PRUEBA PARA EMAIL
 router.post('/test-email', async (req, res) => {
     try {

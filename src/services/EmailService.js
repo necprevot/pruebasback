@@ -16,7 +16,8 @@ class EmailService {
                 return;
             }
 
-            this.transporter = nodemailer.createTransporter({
+            // CORREGIDO: usar nodemailer.createTransport (sin 'er' al final)
+            this.transporter = nodemailer.createTransport({
                 service: 'gmail',
                 auth: {
                     user: process.env.EMAIL_USER,
@@ -108,6 +109,45 @@ class EmailService {
             return {
                 success: false,
                 message: 'Error: ' + error.message
+            };
+        }
+    }
+
+    // NUEVO: Método para verificar configuración
+    async verifyEmailConfiguration() {
+        try {
+            console.log('🔍 [EmailService] Verificando configuración de email...');
+            
+            const config = {
+                hasEmailUser: !!process.env.EMAIL_USER,
+                hasEmailPassword: !!process.env.EMAIL_APP_PASSWORD,
+                emailUser: process.env.EMAIL_USER || 'No configurado',
+                emailFrom: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'No configurado',
+                provider: 'gmail'
+            };
+            
+            if (!config.hasEmailUser || !config.hasEmailPassword) {
+                return {
+                    success: false,
+                    message: 'Configuración de email incompleta. Faltan EMAIL_USER o EMAIL_APP_PASSWORD',
+                    ...config
+                };
+            }
+            
+            // Verificar conexión si está configurado
+            const connectionTest = await this.verifyConnection();
+            
+            return {
+                success: connectionTest,
+                message: connectionTest ? 'Configuración de email válida' : 'Error de conexión con Gmail',
+                ...config
+            };
+            
+        } catch (error) {
+            console.error('❌ [EmailService] Error verificando configuración:', error.message);
+            return {
+                success: false,
+                message: 'Error verificando configuración: ' + error.message
             };
         }
     }
