@@ -1,121 +1,117 @@
-import { getEmailTransporter, emailConfig, verifyEmailConnection } from '../config/nodemailer.js';
+import nodemailer from 'nodemailer';
 
 class EmailService {
     constructor() {
         this.transporter = null;
-        this.isEmailEnabled = false;
+        this.initializeTransporter();
+        console.log('📧 [EmailService] Servicio de email inicializado');
     }
 
-    async initialize() {
+    initializeTransporter() {
         try {
-            console.log('📧 [EmailService] Inicializando servicio de email...');
+            console.log('📧 [EmailService] Configurando transportador Gmail...');
             
-            this.isEmailEnabled = await verifyEmailConnection();
-            
-            if (this.isEmailEnabled) {
-                this.transporter = getEmailTransporter();
-                console.log('✅ [EmailService] Servicio de email inicializado correctamente');
-            } else {
-                console.log('⚠️ [EmailService] Servicio de email deshabilitado');
+            if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
+                console.log('⚠️ [EmailService] Variables EMAIL_USER o EMAIL_APP_PASSWORD no configuradas');
+                return;
             }
+
+            this.transporter = nodemailer.createTransporter({
+                service: 'gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_APP_PASSWORD
+                }
+            });
+
+            console.log('✅ [EmailService] Transportador Gmail configurado');
             
-            return this.isEmailEnabled;
         } catch (error) {
-            console.error('❌ [EmailService] Error inicializando:', error.message);
-            this.isEmailEnabled = false;
+            console.error('❌ [EmailService] Error:', error.message);
+        }
+    }
+
+    async verifyConnection() {
+        if (!this.transporter) {
+            console.log('❌ [EmailService] Transportador no disponible');
+            return false;
+        }
+
+        try {
+            console.log('🔍 [EmailService] Verificando conexión...');
+            await this.transporter.verify();
+            console.log('✅ [EmailService] Conexión verificada');
+            return true;
+        } catch (error) {
+            console.error('❌ [EmailService] Error verificando:', error.message);
             return false;
         }
     }
 
-    async sendWelcomeEmail(userEmail, userName) {
-        if (!this.isEmailEnabled) {
-            console.log('📧 Email deshabilitado - simulando envío de bienvenida');
-            return { success: true, simulated: true };
-        }
-
-        try {
-            const mailOptions = {
-                from: emailConfig.from,
-                to: userEmail,
-                subject: `¡Bienvenido a ${emailConfig.company}!`,
-                html: `
-                    <h1>¡Hola ${userName}!</h1>
-                    <p>Bienvenido a BBFermentos, tu tienda de productos fermentados.</p>
-                    <p>Gracias por registrarte. ¡Esperamos que disfrutes nuestros productos!</p>
-                    <hr>
-                    <p><small>Equipo de ${emailConfig.company}</small></p>
-                `
-            };
-
-            const result = await this.transporter.sendMail(mailOptions);
-            console.log('✅ [EmailService] Email de bienvenida enviado:', result.messageId);
-            
-            return { success: true, messageId: result.messageId };
-        } catch (error) {
-            console.error('❌ [EmailService] Error enviando email de bienvenida:', error.message);
-            return { success: false, error: error.message };
-        }
-    }
-
-    async sendPasswordResetEmail(userEmail, resetToken) {
-        if (!this.isEmailEnabled) {
-            console.log('📧 Email deshabilitado - simulando envío de reset');
-            return { success: true, simulated: true };
-        }
-
-        try {
-            const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:8080'}/reset-password?token=${resetToken}`;
-            
-            const mailOptions = {
-                from: emailConfig.from,
-                to: userEmail,
-                subject: 'Restablecer contraseña - BBFermentos',
-                html: `
-                    <h1>Restablecer Contraseña</h1>
-                    <p>Has solicitado restablecer tu contraseña.</p>
-                    <p><a href="${resetUrl}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Restablecer Contraseña</a></p>
-                    <p>Si no solicitaste este cambio, puedes ignorar este email.</p>
-                    <p><small>El enlace expira en 1 hora.</small></p>
-                `
-            };
-
-            const result = await this.transporter.sendMail(mailOptions);
-            console.log('✅ [EmailService] Email de reset enviado:', result.messageId);
-            
-            return { success: true, messageId: result.messageId };
-        } catch (error) {
-            console.error('❌ [EmailService] Error enviando email de reset:', error.message);
-            return { success: false, error: error.message };
-        }
-    }
-
     async sendTestEmail(toEmail) {
-        if (!this.isEmailEnabled) {
-            return { success: false, error: 'Servicio de email no configurado' };
+        if (!this.transporter) {
+            return { success: false, message: 'Servicio no inicializado' };
         }
 
         try {
-            const mailOptions = {
-                from: emailConfig.from,
+            console.log('📧 [EmailService] Enviando email de prueba a:', toEmail);
+            
+            const result = await this.transporter.sendMail({
+                from: process.env.EMAIL_USER,
                 to: toEmail,
-                subject: 'Test Email - BBFermentos',
-                html: `
-                    <h1>🧪 Email de Prueba</h1>
-                    <p>Este es un email de prueba desde BBFermentos.</p>
-                    <p>Fecha: ${new Date().toLocaleString()}</p>
-                    <p>Si recibes este email, la configuración está funcionando correctamente.</p>
-                `
+                subject: '🧪 Prueba - BBFermentos',
+                text: 'Email de prueba desde BBFermentos. ¡El sistema funciona!',
+                html: '<h1>🧪 Prueba BBFermentos</h1><p>Email de prueba. ¡El sistema funciona!</p>'
+            });
+
+            console.log('✅ [EmailService] Email enviado:', result.messageId);
+            return {
+                success: true,
+                messageId: result.messageId,
+                message: 'Email enviado correctamente'
             };
 
-            const result = await this.transporter.sendMail(mailOptions);
-            console.log('✅ [EmailService] Email de prueba enviado:', result.messageId);
-            
-            return { success: true, messageId: result.messageId };
         } catch (error) {
-            console.error('❌ [EmailService] Error enviando email de prueba:', error.message);
-            return { success: false, error: error.message };
+            console.error('❌ [EmailService] Error enviando:', error.message);
+            return {
+                success: false,
+                message: 'Error: ' + error.message
+            };
+        }
+    }
+
+    async sendWelcomeEmail(userEmail, firstName, lastName) {
+        if (!this.transporter) {
+            return { success: false, message: 'Servicio no inicializado' };
+        }
+
+        try {
+            console.log('📧 [EmailService] Enviando bienvenida a:', userEmail);
+            
+            const result = await this.transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: userEmail,
+                subject: '🎉 ¡Bienvenido a BBFermentos!',
+                text: `¡Hola ${firstName} ${lastName}! Bienvenido a BBFermentos.`,
+                html: `<h1>🎉 ¡Bienvenido ${firstName}!</h1><p>Tu cuenta en BBFermentos ha sido creada exitosamente.</p>`
+            });
+
+            console.log('✅ [EmailService] Bienvenida enviada:', result.messageId);
+            return {
+                success: true,
+                messageId: result.messageId,
+                message: 'Email de bienvenida enviado'
+            };
+
+        } catch (error) {
+            console.error('❌ [EmailService] Error enviando bienvenida:', error.message);
+            return {
+                success: false,
+                message: 'Error: ' + error.message
+            };
         }
     }
 }
 
-export default EmailService;
+const emailService = new EmailService();
+export default emailService;

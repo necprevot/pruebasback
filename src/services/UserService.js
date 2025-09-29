@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import UserDAO from '../dao/UserDAO.js';
 import CartDAO from '../dao/CartDAO.js';
-
+import emailService from '../services/EmailService.js';
 
 class UserService {
     constructor() {
@@ -10,7 +10,6 @@ class UserService {
         this.cartDAO = new CartDAO();
         this.saltRounds = 10;
     }
-
 
     async registerUser(userData) {
         try {
@@ -41,6 +40,28 @@ class UserService {
             
             console.log('✅ [UserService] Usuario registrado exitosamente:', user._id);
             
+            // NUEVO: Enviar email de bienvenida
+            try {
+                console.log('📧 [UserService] Enviando email de bienvenida...');
+                
+                const emailResult = await emailService.sendWelcomeEmail(
+                    userData.email,
+                    userData.first_name,
+                    userData.last_name
+                );
+                
+                if (emailResult.success) {
+                    console.log('✅ [UserService] Email de bienvenida enviado exitosamente:', emailResult.messageId);
+                } else {
+                    console.error('⚠️ [UserService] Error enviando email de bienvenida:', emailResult.message);
+                    // No fallar el registro si el email falla
+                }
+                
+            } catch (emailError) {
+                console.error('❌ [UserService] Error en envío de email:', emailError.message);
+                // No fallar el registro si el email falla
+            }
+            
             return {
                 status: 'success',
                 user: user
@@ -50,7 +71,6 @@ class UserService {
             throw error;
         }
     }
-
 
     async loginUser(email, password) {
         try {
@@ -91,6 +111,14 @@ class UserService {
             
             console.log('✅ [UserService] Token JWT generado exitosamente');
             
+            // OPCIONAL: Actualizar último login
+            try {
+                await this.userDAO.updateLastLogin(user._id);
+            } catch (updateError) {
+                // No es crítico si falla
+                console.log('⚠️ [UserService] No se pudo actualizar último login:', updateError.message);
+            }
+            
             // Remover password de la respuesta
             const { password: _, ...userResponse } = user.toObject();
             
@@ -121,7 +149,6 @@ class UserService {
         }
     }
 
-
     async validateUserExists(userId) {
         try {
             return await this.userDAO.existsById(userId);
@@ -130,6 +157,50 @@ class UserService {
             return false;
         }
     }
+
+    // NUEVO: Método para reenviar email de bienvenida
+    async resendWelcomeEmail(userId) {
+        try {
+            console.log('📧 [UserService] Reenviando email de bienvenida para usuario:', userId);
+            
+            const user = await this.userDAO.findByIdForJWT(userId);
+            
+            const emailResult = await emailService.sendWelcomeEmail(
+                user.email,
+                user.first_name,
+                user.last_name
+            );
+            
+            return emailResult;
+            
+        } catch (error) {
+            console.error('❌ [UserService] Error reenviando email:', error.message);
+            return {
+                success: false,
+                message: 'Error reenviando email: ' + error.message
+            };
+        }
+    }
+
+    async checkEmailConfiguration() {
+    try {
+        console.log('🔍 [UserService] Verificando configuración de email...');
+        
+        const isConnected = await emailService.verifyConnection();
+        
+        return {
+            success: isConnected,
+            message: isConnected ? 'Configuración de email válida' : 'Error en configuración de email'
+        };
+        
+    } catch (error) {
+        console.error('❌ [UserService] Error verificando email:', error.message);
+        return {
+            success: false,
+            message: 'Error verificando configuración: ' + error.message
+        };
+    }
+}
 }
 
 export default UserService;

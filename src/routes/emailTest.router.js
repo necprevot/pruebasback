@@ -1,36 +1,65 @@
 import { Router } from 'express';
-import EmailService from '../services/EmailService.js';
+import emailService from '../services/EmailService.js';
+import UserService from '../services/UserService.js';
 
 const router = Router();
-const emailService = new EmailService();
+const userService = new UserService();
 
-// Inicializar servicio al cargar el router
-emailService.initialize();
-
-// GET /api/email/test - Verificar estado del servicio
-router.get('/test', async (req, res) => {
+// GET /api/email/status - Estado del servicio de email
+router.get('/status', async (req, res) => {
     try {
-        const status = {
-            emailEnabled: emailService.isEmailEnabled,
-            timestamp: new Date().toISOString(),
-            config: {
-                hasEmailUser: !!process.env.EMAIL_USER,
-                hasEmailPass: !!process.env.EMAIL_PASS,
-                service: process.env.EMAIL_SERVICE || 'gmail'
-            }
-        };
-
+        console.log('🔍 [EmailTest] Verificando estado del servicio de email...');
+        
+        const hasConfig = !!(process.env.EMAIL_USER && process.env.EMAIL_APP_PASSWORD);
+        const connectionTest = hasConfig ? await emailService.verifyConnection() : false;
+        
         res.json({
             status: 'success',
-            message: 'Servicio de email verificado',
-            data: status
+            emailService: {
+                configured: hasConfig,
+                connected: connectionTest,
+                emailUser: process.env.EMAIL_USER || 'No configurado',
+                emailFrom: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'No configurado',
+                lastCheck: new Date().toISOString()
+            },
+            environment: {
+                nodeEnv: process.env.NODE_ENV || 'development',
+                websiteUrl: process.env.WEBSITE_URL || 'http://localhost:8080'
+            }
         });
-
+        
     } catch (error) {
+        console.error('❌ [EmailTest] Error obteniendo estado:', error.message);
         res.status(500).json({
             status: 'error',
-            message: 'Error verificando servicio de email',
-            error: error.message
+            message: 'Error obteniendo estado del servicio: ' + error.message
+        });
+    }
+});
+
+// GET /api/email/test - Probar configuración de email
+router.get('/test', async (req, res) => {
+    try {
+        console.log('🧪 [EmailTest] Iniciando prueba de configuración de email');
+        
+        const result = await userService.checkEmailConfiguration();
+        
+        res.json({
+            status: result.success ? 'success' : 'error',
+            message: result.message,
+            timestamp: new Date().toISOString(),
+            emailConfig: {
+                emailUser: process.env.EMAIL_USER || 'No configurado',
+                emailFrom: process.env.EMAIL_FROM || 'No configurado',
+                hasPassword: !!process.env.EMAIL_APP_PASSWORD
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ [EmailTest] Error en prueba:', error.message);
+        res.status(500).json({
+            status: 'error',
+            message: 'Error probando configuración: ' + error.message
         });
     }
 });
@@ -38,77 +67,76 @@ router.get('/test', async (req, res) => {
 // POST /api/email/send-test - Enviar email de prueba
 router.post('/send-test', async (req, res) => {
     try {
+        console.log('🧪 [EmailTest] Enviando email de prueba');
+        
         const { email } = req.body;
-
+        
         if (!email) {
             return res.status(400).json({
                 status: 'error',
-                message: 'Email es requerido'
+                message: 'Email de destino es requerido'
             });
         }
-
-        const result = await emailService.sendTestEmail(email);
-
-        if (result.success) {
-            res.json({
-                status: 'success',
-                message: 'Email de prueba enviado correctamente',
-                data: result
-            });
-        } else {
-            res.status(500).json({
-                status: 'error',
-                message: 'Error enviando email de prueba',
-                error: result.error
-            });
-        }
-
-    } catch (error) {
-        res.status(500).json({
-            status: 'error',
-            message: 'Error interno del servidor',
-            error: error.message
-        });
-    }
-});
-
-// POST /api/email/welcome - Enviar email de bienvenida (para testing)
-router.post('/welcome', async (req, res) => {
-    try {
-        const { email, name } = req.body;
-
-        if (!email || !name) {
+        
+        // Validar formato de email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
             return res.status(400).json({
                 status: 'error',
-                message: 'Email y nombre son requeridos'
+                message: 'Formato de email inválido'
             });
         }
-
-        const result = await emailService.sendWelcomeEmail(email, name);
-
-        if (result.success) {
-            res.json({
-                status: 'success',
-                message: 'Email de bienvenida enviado',
-                data: result
-            });
-        } else {
-            res.status(500).json({
-                status: 'error',
-                message: 'Error enviando email de bienvenida',
-                error: result.error
-            });
-        }
-
+        
+        const result = await emailService.sendTestEmail(email);
+        
+        res.json({
+            status: result.success ? 'success' : 'error',
+            message: result.message,
+            messageId: result.messageId || null,
+            timestamp: new Date().toISOString()
+        });
+        
     } catch (error) {
+        console.error('❌ [EmailTest] Error enviando email de prueba:', error.message);
         res.status(500).json({
             status: 'error',
-            message: 'Error interno del servidor',
-            error: error.message
+            message: 'Error enviando email de prueba: ' + error.message
         });
     }
 });
 
-console.log('📧 Router de email test cargado');
+// POST /api/email/send-welcome - Enviar email de bienvenida manual
+router.post('/send-welcome', async (req, res) => {
+    try {
+        console.log('🧪 [EmailTest] Enviando email de bienvenida manual');
+        
+        const { email, firstName, lastName } = req.body;
+        
+        if (!email || !firstName || !lastName) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Email, firstName y lastName son requeridos'
+            });
+        }
+        
+        const result = await emailService.sendWelcomeEmail(email, firstName, lastName);
+        
+        res.json({
+            status: result.success ? 'success' : 'error',
+            message: result.message,
+            messageId: result.messageId || null,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ [EmailTest] Error enviando email de bienvenida:', error.message);
+        res.status(500).json({
+            status: 'error',
+            message: 'Error enviando email de bienvenida: ' + error.message
+        });
+    }
+});
+
+console.log('📧 [EmailTest] Router de testing de emails cargado');
 
 export default router;
