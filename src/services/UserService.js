@@ -4,12 +4,18 @@ import crypto from 'crypto';
 import UserRepository from '../repositories/UserRepository.js';
 import CartDAO from '../dao/CartDAO.js';
 import emailService from '../services/EmailService.js';
+import UserDAO from '../dao/UserDAO.js';
 
 class UserService {
     constructor() {
-        // CAMBIO: Usar Repository en lugar de DAO directo
+        // PATRÓN REPOSITORY: Usar Repository en lugar de DAO directo
         this.userRepository = new UserRepository();
+        
+        // Para algunas operaciones específicas seguimos usando DAO
+        // (como crear carrito o buscar con password)
+        this.userDAO = new UserDAO();
         this.cartDAO = new CartDAO();
+        
         this.saltRounds = 10;
         // Almacenar tokens de reset en memoria (en producción usar Redis o DB)
         this.resetTokens = new Map();
@@ -41,10 +47,12 @@ class UserService {
                 role: userData.role || 'user'
             };
             
-            console.log('📝 [UserService] Creando usuario con estructura completa');
-            const user = await this.userDAO.createUser(userToCreate);
+            console.log('📝 [UserService] Creando usuario con Repository');
             
-            console.log('✅ [UserService] Usuario registrado exitosamente:', user._id);
+            // USAR REPOSITORY: Retorna DTO sin información sensible
+            const userDTO = await this.userRepository.createUser(userToCreate);
+            
+            console.log('✅ [UserService] Usuario registrado exitosamente:', userDTO._id);
             
             // Enviar email de bienvenida
             try {
@@ -68,7 +76,7 @@ class UserService {
             
             return {
                 status: 'success',
-                user: user
+                user: userDTO // Ya es un DTO sin información sensible
             };
         } catch (error) {
             console.error('❌ [UserService] Error en registro:', error.message);
@@ -80,7 +88,9 @@ class UserService {
         try {
             console.log('🔐 [UserService] Iniciando login para:', email);
             
-            const user = await this.userDAO.findByEmailWithPassword(email);
+            // USAR REPOSITORY para buscar con password (necesario para login)
+            const user = await this.userRepository.findByEmailWithPassword(email);
+            
             if (!user) {
                 console.log('❌ [UserService] Usuario no encontrado');
                 throw new Error('Credenciales inválidas');
@@ -113,11 +123,12 @@ class UserService {
             console.log('✅ [UserService] Token JWT generado exitosamente');
             
             try {
-                await this.userDAO.updateLastLogin(user._id);
+                await this.userRepository.updateLastLogin(user._id);
             } catch (updateError) {
                 console.log('⚠️ [UserService] No se pudo actualizar último login:', updateError.message);
             }
             
+            // Remover password antes de devolver
             const { password: _, ...userResponse } = user.toObject();
             
             return {
@@ -135,11 +146,12 @@ class UserService {
         try {
             console.log('👤 [UserService] Obteniendo usuario actual:', userId);
             
-            const user = await this.userDAO.findByIdForJWT(userId);
+            // USAR REPOSITORY: Retorna CurrentUserDTO sin información sensible
+            const userDTO = await this.userRepository.getCurrentUser(userId);
             
             return {
                 status: 'success',
-                user: user
+                user: userDTO // Ya es CurrentUserDTO sin información sensible
             };
         } catch (error) {
             console.error('❌ [UserService] Error obteniendo usuario actual:', error.message);
@@ -149,7 +161,7 @@ class UserService {
 
     async validateUserExists(userId) {
         try {
-            return await this.userDAO.existsById(userId);
+            return await this.userRepository.existsById(userId);
         } catch (error) {
             console.error('❌ [UserService] Error validando usuario:', error.message);
             return false;
@@ -161,10 +173,10 @@ class UserService {
         try {
             console.log('🔐 [UserService] Solicitando reset de contraseña para:', email);
             
-            // Buscar usuario por email
-            const user = await this.userDAO.findByEmail(email);
+            // USAR REPOSITORY para buscar usuario
+            const userDTO = await this.userRepository.findByEmail(email);
             
-            if (!user) {
+            if (!userDTO) {
                 console.log('⚠️ [UserService] Usuario no encontrado, pero no revelamos esto por seguridad');
                 // Por seguridad, no revelamos si el usuario existe o no
                 return {
@@ -179,8 +191,8 @@ class UserService {
             
             // Guardar token en memoria (en producción usar DB)
             this.resetTokens.set(resetToken, {
-                userId: user._id.toString(),
-                email: user.email,
+                userId: userDTO._id.toString(),
+                email: userDTO.email,
                 expiry: tokenExpiry
             });
             
@@ -188,7 +200,7 @@ class UserService {
             
             // Enviar email con enlace de reset
             const emailResult = await emailService.sendPasswordResetEmail(
-                user.email,
+                userDTO.email,
                 resetToken
             );
             
@@ -213,7 +225,7 @@ class UserService {
         }
     }
 
-    // NUEVO: Resetear contraseña con token
+    // NUEVO: Resetear contraseña
     async resetPassword(token, newPassword) {
         try {
             console.log('🔄 [UserService] Procesando reset de contraseña con token');
@@ -235,15 +247,15 @@ class UserService {
             
             console.log('✅ [UserService] Token válido, verificando contraseña...');
             
-            // NUEVO: Obtener usuario con contraseña actual para comparar
-            const user = await this.userDAO.findByEmailWithPassword(tokenData.email);
+            // USAR REPOSITORY para obtener usuario con contraseña actual
+            const user = await this.userRepository.findByEmailWithPassword(tokenData.email);
             
             if (!user) {
                 console.log('❌ [UserService] Usuario no encontrado');
                 throw new Error('Usuario no encontrado');
             }
             
-            // NUEVO: Comparar nueva contraseña con la actual
+            // Comparar nueva contraseña con la actual
             const isSamePassword = bcrypt.compareSync(newPassword, user.password);
             
             if (isSamePassword) {
@@ -256,8 +268,8 @@ class UserService {
             // Encriptar nueva contraseña
             const hashedPassword = bcrypt.hashSync(newPassword, this.saltRounds);
             
-            // Actualizar contraseña en la base de datos
-            await this.userDAO.updateById(tokenData.userId, {
+            // USAR REPOSITORY para actualizar contraseña
+            await this.userRepository.updateUser(tokenData.userId, {
                 password: hashedPassword
             });
             
@@ -293,12 +305,13 @@ class UserService {
         try {
             console.log('📧 [UserService] Reenviando email de bienvenida para usuario:', userId);
             
-            const user = await this.userDAO.findByIdForJWT(userId);
+            // USAR REPOSITORY para obtener usuario
+            const userDTO = await this.userRepository.getCurrentUser(userId);
             
             const emailResult = await emailService.sendWelcomeEmail(
-                user.email,
-                user.first_name,
-                user.last_name
+                userDTO.email,
+                userDTO.first_name,
+                userDTO.last_name
             );
             
             return emailResult;

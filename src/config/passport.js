@@ -1,13 +1,13 @@
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import passport from 'passport';
 import dotenv from 'dotenv';
-import UserDAO from '../dao/UserDAO.js'; // CORREGIDO: default import
+import UserRepository from '../repositories/UserRepository.js';
 
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET || 'secret_for_dev';
 
-// Instanciar DAO para usar en estrategias
-const userDAO = new UserDAO();
+// Instanciar Repository para usar en estrategias
+const userRepository = new UserRepository();
 
 
 export const initializePassport = () => {
@@ -27,8 +27,8 @@ export const initializePassport = () => {
                 role: jwt_payload.role
             });
             
-            // Usar DAO para buscar usuario
-            const user = await userDAO.findByIdForJWT(jwt_payload.id);
+            // USAR REPOSITORY para buscar usuario
+            const user = await userRepository.findByIdForJWT(jwt_payload.id);
             
             if (!user) {
                 console.log('❌ [Passport-JWT] Usuario no encontrado');
@@ -54,30 +54,19 @@ export const initializePassport = () => {
                 return done(null, false, { message: 'Token inválido' });
             }
             
-            // Usar DAO para obtener datos del usuario asociado al JWT
-            const user = await userDAO.findByIdForJWT(jwt_payload.id);
+            // USAR REPOSITORY para obtener CurrentUserDTO
+            // Este método retorna CurrentUserDTO sin información sensible
+            const userDTO = await userRepository.getCurrentUser(jwt_payload.id);
             
-            if (!user) {
+            if (!userDTO) {
                 console.log('❌ [Passport-Current] Usuario no existe');
                 return done(null, false, { message: 'Usuario no existe' });
             }
             
-            // Devolver datos del usuario asociados al JWT
-            const userData = {
-                _id: user._id,
-                first_name: user.first_name,
-                last_name: user.last_name,
-                email: user.email,
-                age: user.age,
-                role: user.role,
-                cart: user.cart,
-                // Incluir información del JWT para la evaluación
-                jwt_issued_at: new Date(jwt_payload.iat * 1000),
-                jwt_expires_at: new Date(jwt_payload.exp * 1000)
-            };
+            console.log('✅ [Passport-Current] Usuario validado para /current:', userDTO.email);
             
-            console.log('✅ [Passport-Current] Usuario validado para /current:', userData.email);
-            return done(null, userData);
+            // Retornar CurrentUserDTO que NO contiene información sensible
+            return done(null, userDTO);
         } catch (err) {
             console.error('❌ [Passport-Current] Error en estrategia current:', err.message);
             return done(err, false);
