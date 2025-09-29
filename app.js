@@ -18,7 +18,7 @@ import cartsRouter from './src/routes/carts.router.js';
 import viewsRouter from './src/routes/views.router.js';
 import usersRouter from './src/routes/users.router.js';        
 import sessionsRouter from './src/routes/sessions.router.js';
-import emailTestRouter from './src/routes/emailTest.router.js';  // NUEVO: Importar rutas de email
+import emailTestRouter from './src/routes/emailTest.router.js';
 
 import { logger } from './src/utils/logger.js';
 
@@ -32,7 +32,7 @@ console.log('   ✅ Estrategias de Passport (jwt, current)');
 console.log('   ✅ Sistema de Login con JWT');
 console.log('   ✅ Endpoint /api/sessions/current');
 console.log('   ✅ Patrón DAO implementado');
-console.log('   ✅ Sistema de emails con Nodemailer'); // NUEVO
+console.log('   ✅ Sistema de emails con Nodemailer');
 
 const startServer = async () => {
     try {
@@ -40,6 +40,7 @@ const startServer = async () => {
         const httpServer = createServer(app);
         const io = new Server(httpServer);
 
+        // Middlewares globales
         app.use(express.json());
         app.use(express.urlencoded({ extended: true }));
         app.use(cookieParser());
@@ -59,15 +60,20 @@ const startServer = async () => {
         
         app.set('io', io);
         
-        // RUTAS - ORDEN IMPORTANTE
-        console.log('📋 Registrando rutas...');
-        app.use('/', viewsRouter);
+        
+        // RUTAS API - DEBEN IR ANTES DE LAS RUTAS DE VISTAS
+        console.log('📋 Registrando rutas API...');
         app.use('/api/products', productsRouter);
         app.use('/api/carts', cartsRouter);
-        app.use('/api/users', usersRouter);      // CRUD usuarios
-        app.use('/api/sessions', sessionsRouter); // Login + /current
-        app.use('/api/email', emailTestRouter);   // NUEVO: Testing de emails
-        console.log('✅ Ruta /api/email registrada correctamente'); // DEBUG
+        app.use('/api/users', usersRouter);
+        app.use('/api/sessions', sessionsRouter);  // ← IMPORTANTE: Esta ruta
+        app.use('/api/email', emailTestRouter);
+        console.log('✅ Rutas API registradas');
+        
+        // RUTAS DE VISTAS - DESPUÉS DE LAS RUTAS API
+        console.log('📋 Registrando rutas de vistas...');
+        app.use('/', viewsRouter);
+        console.log('✅ Rutas de vistas registradas');
         
         // WebSockets
         configureWebSockets(io);
@@ -86,9 +92,11 @@ const startServer = async () => {
             console.log('   POST /api/users/register     - Registrar usuario');
             console.log('   GET  /api/users/:id          - Obtener usuario (JWT)');
             console.log('\n🔐 Autenticación:');
-            console.log('   POST /api/sessions/login     - Login (genera JWT)');
-            console.log('   GET  /api/sessions/current   - Validar usuario (JWT)');
-            console.log('   POST /api/sessions/logout    - Logout');
+            console.log('   POST /api/sessions/login           - Login (genera JWT)');
+            console.log('   GET  /api/sessions/current         - Validar usuario (JWT)');
+            console.log('   POST /api/sessions/logout          - Logout');
+            console.log('   POST /api/sessions/forgot-password - Solicitar reset');
+            console.log('   POST /api/sessions/reset-password  - Resetear contraseña');
             console.log('\n📧 Testing de Emails:');
             console.log('   GET  /api/email/status       - Estado del servicio');
             console.log('   GET  /api/email/test         - Probar configuración');
@@ -106,6 +114,7 @@ const startServer = async () => {
             console.log('   ✅ Endpoint /current funcional');
             console.log('   ✅ Patrón DAO en toda la aplicación');
             console.log('   ✅ Emails de bienvenida automáticos');
+            console.log('   ✅ Sistema de recuperación de contraseña');
             console.log('=====================================\n');
         });
         

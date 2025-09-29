@@ -89,11 +89,12 @@ class SessionController {
 
             console.log('✅ [SessionController] Usuario validado correctamente');
             
-            // Devolver datos del usuario asociados al JWT
+            // CAMBIO: Devolver datos del usuario usando DTO (sin información sensible)
+            // El DTO ya fue creado en el Repository/Service
             res.json({
                 status: 'success',
                 message: 'Usuario validado correctamente',
-                payload: req.user
+                payload: req.user // Ya es un CurrentUserDTO sin información sensible
             });
 
         } catch (error) {
@@ -158,6 +159,11 @@ class SessionController {
     async resetPassword(req, res) {
         try {
             console.log('🔄 [SessionController] Reset de contraseña');
+            console.log('📥 [SessionController] Body recibido:', {
+                hasToken: !!req.body.token,
+                hasNewPassword: !!req.body.newPassword,
+                hasConfirmPassword: !!req.body.confirmPassword
+            });
             
             const { token, newPassword, confirmPassword } = req.body;
             
@@ -207,6 +213,16 @@ class SessionController {
             
         } catch (error) {
             console.error('❌ [SessionController] Error en reset password:', error.message);
+            console.error('❌ [SessionController] Stack trace:', error.stack);
+            
+            // Manejo específico de errores
+            if (error.message.includes('igual a la contraseña actual') || 
+                error.message.includes('no puede ser igual')) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'La nueva contraseña no puede ser igual a tu contraseña actual'
+                });
+            }
             
             if (error.message.includes('inválido') || error.message.includes('expirado')) {
                 return res.status(400).json({
@@ -217,7 +233,7 @@ class SessionController {
             
             res.status(500).json({
                 status: 'error',
-                message: 'Error interno del servidor'
+                message: error.message || 'Error interno del servidor'
             });
         }
     }

@@ -5,6 +5,9 @@ import passport from "passport";
 const router = Router();
 const sessionController = new SessionController();
 
+console.log('📍 [sessions.router.js] Router de sesiones cargado');
+console.log('📍 [sessions.router.js] SessionController instanciado');
+
 // POST /api/sessions/login - Login con JWT
 router.post('/login', (req, res) => {
     console.log('📍 [Route] POST /api/sessions/login');
@@ -17,6 +20,19 @@ router.post('/logout', (req, res) => {
     sessionController.logout(req, res);
 });
 
+// POST /api/sessions/forgot-password - Solicitar reset de contraseña
+router.post('/forgot-password', (req, res) => {
+    console.log('📍 [Route] POST /api/sessions/forgot-password');
+    sessionController.requestPasswordReset(req, res);
+});
+
+// POST /api/sessions/reset-password - Resetear contraseña con token
+router.post('/reset-password', (req, res) => {
+    console.log('📍 [Route] POST /api/sessions/reset-password');
+    console.log('📥 [Route] Body:', req.body);
+    sessionController.resetPassword(req, res);
+});
+
 // GET /api/sessions/current - Validar usuario logueado
 router.get('/current',
     passport.authenticate('current', { session: false }),
@@ -25,13 +41,6 @@ router.get('/current',
         sessionController.current(req, res);
     }
 );
-
-// POST /api/sessions/forgot-password - Solicitar reset
-router.post('/forgot-password', (req, res) => {
-    console.log('📍 [Route] POST /api/sessions/forgot-password');
-    sessionController.requestPasswordReset(req, res);
-});
-
 
 // 🧪 ENDPOINT DE PRUEBA PARA EMAIL
 router.post('/test-email', async (req, res) => {

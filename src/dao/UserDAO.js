@@ -2,7 +2,6 @@ import BaseDAO from './BaseDAO.js';
 import User from '../models/User.js';
 import mongoose from 'mongoose';
 
-
 class UserDAO extends BaseDAO {
     constructor() {
         super(User);
@@ -115,6 +114,38 @@ class UserDAO extends BaseDAO {
         } catch (error) {
             console.error('❌ [UserDAO] Error verificando existencia de usuario:', error.message);
             return false;
+        }
+    }
+
+    /**
+     * Actualizar usuario por ID (necesario para reset password)
+     */
+    async updateById(userId, updateData) {
+        try {
+            console.log('🔄 [UserDAO] Actualizando usuario:', userId);
+            console.log('📝 [UserDAO] Datos a actualizar:', Object.keys(updateData));
+            
+            await this._ensureConnection();
+            
+            if (!mongoose.Types.ObjectId.isValid(userId)) {
+                throw new Error(`ID inválido: ${userId}`);
+            }
+            
+            const updated = await this.model.findByIdAndUpdate(
+                userId,
+                updateData,
+                { new: true, runValidators: true }
+            );
+            
+            if (!updated) {
+                throw new Error(`Usuario con ID ${userId} no encontrado`);
+            }
+            
+            console.log('✅ [UserDAO] Usuario actualizado exitosamente:', updated._id);
+            return updated;
+        } catch (error) {
+            console.error('❌ [UserDAO] Error actualizando usuario:', error.message);
+            throw error;
         }
     }
 
