@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import OrderController from '../controllers/OrderController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { asyncHandler } from '../utils/CustomErrors.js';
 
 const router = Router();
 const orderController = new OrderController();
@@ -113,6 +114,17 @@ router.post('/:id/tracking',
   authenticate,
   authorize('admin'),
   orderController.updateTracking
+);
+
+router.post('/orders', 
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const order = await orderService.createOrder(req.user._id, req.body);
+    res.status(201).json({
+      status: 'success',
+      payload: order
+    });
+  })
 );
 
 console.log('✅ [Orders Router] Rutas configuradas:');
