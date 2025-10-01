@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import ProductManager from '../managers/ProductManager.js';
 import CartManager from '../managers/CartManager.js';
-import { authenticate, authorize } from '../middleware/auth.js';
-
+// ✅ IMPORTAR SOLO LOS MIDDLEWARES PARA VISTAS
+import { authenticateView, authorizeView } from '../middleware/authViews.js';
 
 const router = Router();
 const productManager = new ProductManager();
@@ -119,27 +119,35 @@ router.get('/', (req, res) => {
     res.redirect('/products');
 });
 
-// Ruta para realTimeProducts.handlebars
-router.get('/realtimeproducts', async (req, res) => {
-    try {
-        const result = await productManager.getProducts({
-            limit: 100,
-            status: undefined
-        });
+// ========================================
+// RUTA PROTEGIDA: Panel de Administración
+// ========================================
+router.get('/realtimeproducts', 
+    authenticateView,           // ✅ Middleware para vistas que redirige al login
+    authorizeView('admin'),     // ✅ Middleware para vistas que muestra error 403
+    async (req, res) => {
+        try {
+            const result = await productManager.getProducts({
+                limit: 100,
+                status: undefined
+            });
 
-        res.render('realTimeProducts', {
-            title: 'Productos en Tiempo Real',
-            products: result.payload
-        });
-    } catch (error) {
-        console.error('Error en ruta realtimeproducts:', error);
-        res.render('realTimeProducts', {
-            title: 'Productos en Tiempo Real',
-            products: [],
-            error: 'Error al cargar productos: ' + error.message
-        });
+            res.render('realTimeProducts', {
+                title: '🔧 Panel de Administración - Productos en Tiempo Real',
+                products: result.payload,
+                user: req.user
+            });
+        } catch (error) {
+            console.error('Error en ruta realtimeproducts:', error);
+            res.render('realTimeProducts', {
+                title: '🔧 Panel de Administración - Productos en Tiempo Real',
+                products: [],
+                error: 'Error al cargar productos: ' + error.message,
+                user: req.user
+            });
+        }
     }
-});
+);
 
 // Ruta para ver productos por categoría
 router.get('/category/:category', async (req, res) => {
@@ -390,7 +398,7 @@ router.get('/register', (req, res) => {
     }
 });
 
-// NUEVO: Ruta para solicitar reset de contraseña
+// Ruta para solicitar reset de contraseña
 router.get('/forgot-password', (req, res) => {
     try {
         res.render('forgotPassword', {
@@ -407,7 +415,7 @@ router.get('/forgot-password', (req, res) => {
     }
 });
 
-// NUEVO: Ruta para resetear contraseña con token
+// Ruta para resetear contraseña con token
 router.get('/reset-password/:token', (req, res) => {
     try {
         const { token } = req.params;
@@ -454,32 +462,5 @@ router.get('/profile', async (req, res) => {
 router.get('/logout', (req, res) => {
     res.redirect('/login?message=logged_out');
 });
-
-router.get('/realtimeproducts', 
-    authenticate,           // ✅ Verificar que está autenticado
-    authorize('admin'),     // ✅ Verificar que es admin
-    async (req, res) => {
-        try {
-            const result = await productManager.getProducts({
-                limit: 100,
-                status: undefined
-            });
-
-            res.render('realTimeProducts', {
-                title: '🔧 Panel de Administración - Productos en Tiempo Real',
-                products: result.payload,
-                user: req.user  // ✅ Pasar info del usuario admin a la vista
-            });
-        } catch (error) {
-            console.error('Error en ruta realtimeproducts:', error);
-            res.render('realTimeProducts', {
-                title: '🔧 Panel de Administración - Productos en Tiempo Real',
-                products: [],
-                error: 'Error al cargar productos: ' + error.message,
-                user: req.user
-            });
-        }
-    }
-);
 
 export default router;
