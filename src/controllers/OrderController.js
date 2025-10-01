@@ -1,7 +1,3 @@
-/**
- * OrderController - Controlador para gestión de órdenes
- * Maneja las peticiones HTTP relacionadas con órdenes
- */
 
 import OrderService from '../services/OrderService.js';
 import { asyncHandler } from '../utils/CustomErrors.js';
@@ -17,7 +13,6 @@ class OrderController {
    * Crear orden desde carrito
    */
   createOrder = asyncHandler(async (req, res) => {
-    console.log('📦 [OrderController] Creando orden para usuario:', req.user._id);
 
     const { shippingAddress, paymentMethod, notes } = req.body;
 
@@ -59,7 +54,6 @@ class OrderController {
    * Obtener orden por ID
    */
   getOrderById = asyncHandler(async (req, res) => {
-    console.log('🔍 [OrderController] Obteniendo orden:', req.params.id);
 
     const order = await this.orderService.getOrderById(
       req.params.id,
@@ -78,7 +72,6 @@ class OrderController {
    * Obtener órdenes del usuario autenticado
    */
   getMyOrders = asyncHandler(async (req, res) => {
-    console.log('📋 [OrderController] Obteniendo órdenes del usuario:', req.user._id);
 
     const { page = 1, limit = 10, status } = req.query;
 
@@ -101,7 +94,6 @@ class OrderController {
    * Obtener todas las órdenes (Admin)
    */
   getAllOrders = asyncHandler(async (req, res) => {
-    console.log('📋 [OrderController] Obteniendo todas las órdenes (Admin)');
 
     const { page = 1, limit = 20, status, userId, paymentStatus, startDate, endDate } = req.query;
 
@@ -130,7 +122,6 @@ class OrderController {
    * Actualizar estado de orden (Admin)
    */
   updateOrderStatus = asyncHandler(async (req, res) => {
-    console.log('🔄 [OrderController] Actualizando estado de orden:', req.params.id);
 
     const { status, notes } = req.body;
 
@@ -160,7 +151,6 @@ class OrderController {
    * Confirmar pago de orden (Admin o sistema de pago)
    */
   confirmPayment = asyncHandler(async (req, res) => {
-    console.log('💳 [OrderController] Confirmando pago de orden:', req.params.id);
 
     const { transactionId, paymentDetails } = req.body;
 
@@ -189,7 +179,6 @@ class OrderController {
    * Cancelar orden
    */
   cancelOrder = asyncHandler(async (req, res) => {
-    console.log('❌ [OrderController] Cancelando orden:', req.params.id);
 
     const { reason } = req.body;
 
@@ -218,7 +207,6 @@ class OrderController {
    * Obtener estadísticas de órdenes (Admin)
    */
   getOrderStats = asyncHandler(async (req, res) => {
-    console.log('📊 [OrderController] Obteniendo estadísticas de órdenes');
 
     const { startDate, endDate } = req.query;
 
@@ -235,7 +223,6 @@ class OrderController {
    * Actualizar información de tracking (Admin)
    */
   updateTracking = asyncHandler(async (req, res) => {
-    console.log('📦 [OrderController] Actualizando tracking de orden:', req.params.id);
 
     const { company, trackingNumber, estimatedDelivery } = req.body;
 

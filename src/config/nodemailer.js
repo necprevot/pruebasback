@@ -3,13 +3,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('📧 [Nodemailer] Inicializando configuración de email...');
 
 // Función para crear el transporter según el proveedor
 const createTransporter = () => {
     const provider = process.env.EMAIL_PROVIDER || 'gmail';
-    
-    console.log('📧 [Nodemailer] Proveedor configurado:', provider);
     
     switch (provider.toLowerCase()) {
         case 'gmail':
@@ -23,25 +20,22 @@ const createTransporter = () => {
         case 'sendgrid':
             return createSendgridTransporter();
         default:
-            console.log('⚠️ [Nodemailer] Proveedor no reconocido, usando Gmail por defecto');
             return createGmailTransporter();
     }
 };
 
 // Gmail transporter
 const createGmailTransporter = () => {
-    console.log('📧 [Nodemailer] Configurando Gmail...');
     
     const user = process.env.EMAIL_USER;
     const pass = process.env.EMAIL_APP_PASSWORD;
     
     if (!user || !pass) {
         console.error('❌ [Nodemailer] Faltan credenciales de Gmail');
-        console.log('💡 [Nodemailer] Configura EMAIL_USER y EMAIL_APP_PASSWORD');
         return null;
     }
     
-    // CORREGIDO: usar nodemailer.createTransport (sin 'er' al final)
+    // Usar nodemailer.createTransport (sin 'er' al final)
     return nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -54,63 +48,15 @@ const createGmailTransporter = () => {
     });
 };
 
-// Outlook transporter
-const createOutlookTransporter = () => {
-    console.log('📧 [Nodemailer] Configurando Outlook...');
-    
-    const user = process.env.EMAIL_USER;
-    const pass = process.env.EMAIL_PASSWORD;
-    
-    if (!user || !pass) {
-        console.error('❌ [Nodemailer] Faltan credenciales de Outlook');
-        return null;
-    }
-    
-    return nodemailer.createTransport({
-        service: 'hotmail',
-        auth: {
-            user: user,
-            pass: pass
-        },
-        tls: {
-            rejectUnauthorized: false
-        }
-    });
-};
-
-// Yahoo transporter
-const createYahooTransporter = () => {
-    console.log('📧 [Nodemailer] Configurando Yahoo...');
-    
-    const user = process.env.EMAIL_USER;
-    const pass = process.env.EMAIL_APP_PASSWORD;
-    
-    if (!user || !pass) {
-        console.error('❌ [Nodemailer] Faltan credenciales de Yahoo');
-        return null;
-    }
-    
-    return nodemailer.createTransport({
-        service: 'yahoo',
-        auth: {
-            user: user,
-            pass: pass
-        },
-        tls: {
-            rejectUnauthorized: false
-        }
-    });
-};
 
 // Mailtrap transporter (para testing)
 const createMailtrapTransporter = () => {
-    console.log('📧 [Nodemailer] Configurando Mailtrap (Testing)...');
     
     const user = process.env.MAILTRAP_USER;
     const pass = process.env.MAILTRAP_PASS;
     
     if (!user || !pass) {
-        console.error('❌ [Nodemailer] Faltan credenciales de Mailtrap');
+        console.error(' [Nodemailer] Faltan credenciales de Mailtrap');
         return null;
     }
     
@@ -126,12 +72,11 @@ const createMailtrapTransporter = () => {
 
 // SendGrid transporter
 const createSendgridTransporter = () => {
-    console.log('📧 [Nodemailer] Configurando SendGrid...');
     
     const apiKey = process.env.SENDGRID_API_KEY;
     
     if (!apiKey) {
-        console.error('❌ [Nodemailer] Falta SENDGRID_API_KEY');
+        console.error(' [Nodemailer] Falta SENDGRID_API_KEY');
         return null;
     }
     
@@ -147,17 +92,15 @@ const createSendgridTransporter = () => {
 // Función para verificar la configuración
 const verifyTransporter = async (transporter) => {
     if (!transporter) {
-        console.error('❌ [Nodemailer] No se pudo crear el transporter');
+        console.error(' [Nodemailer] No se pudo crear el transporter');
         return false;
     }
     
     try {
-        console.log('🔍 [Nodemailer] Verificando configuración...');
         await transporter.verify();
-        console.log('✅ [Nodemailer] Configuración de email verificada correctamente');
         return true;
     } catch (error) {
-        console.error('❌ [Nodemailer] Error en configuración:', error.message);
+        console.error(' [Nodemailer] Error en configuración:', error.message);
         return false;
     }
 };
@@ -179,12 +122,10 @@ const sendEmail = async (options) => {
     };
     
     try {
-        console.log('📤 [Nodemailer] Enviando email a:', options.to);
         const result = await transporter.sendMail(mailOptions);
-        console.log('✅ [Nodemailer] Email enviado correctamente');
         return result;
     } catch (error) {
-        console.error('❌ [Nodemailer] Error enviando email:', error.message);
+        console.error(' [Nodemailer] Error enviando email:', error.message);
         throw error;
     }
 };

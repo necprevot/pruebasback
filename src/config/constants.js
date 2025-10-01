@@ -1,14 +1,11 @@
-/**
- * Constantes globales de la aplicación
- * Centraliza valores que se usan en múltiples lugares
- */
+
 
 // Roles del sistema
 export const USER_ROLES = {
   ADMIN: 'admin',
   USER: 'user',
-  PREMIUM: 'premium', // Nuevo rol para usuarios premium
-  GUEST: 'guest'      // Nuevo rol para invitados
+  PREMIUM: 'premium',  // Futuros roles
+  GUEST: 'guest'      
 };
 
 // Estados de órdenes

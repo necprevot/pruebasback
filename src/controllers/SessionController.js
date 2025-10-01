@@ -37,7 +37,7 @@ class SessionController {
             sameSite: 'lax',
             maxAge: 24 * 60 * 60 * 1000 // 24 horas
         });
-        
+
             // Respuesta con token JWT válido
             res.json({
                 status: 'success',
@@ -208,11 +208,7 @@ class SessionController {
                 });
             }
 
-            console.log('🔄 [SessionController] Procesando reset con token válido');
-
             const result = await this.userService.resetPassword(token, newPassword);
-
-            console.log('✅ [SessionController] Contraseña restablecida exitosamente');
 
             res.json({
                 status: 'success',
@@ -246,10 +242,9 @@ class SessionController {
         }
     }
 
-    // NUEVO: Endpoint para pruebas de email
+    // Endpoint para pruebas de email
     async sendTestEmail(req, res) {
         try {
-            console.log('🧪 [SessionController] Enviando email de prueba');
 
             const { email } = req.body;
 
@@ -263,14 +258,13 @@ class SessionController {
             const result = await this.userService.sendTestEmail(email);
 
             if (result.success) {
-                console.log('✅ [SessionController] Email de prueba enviado');
                 res.json({
                     status: 'success',
                     message: 'Email de prueba enviado exitosamente',
                     messageId: result.messageId
                 });
             } else {
-                console.error('❌ [SessionController] Error enviando email de prueba');
+                console.error('[SessionController] Error enviando email de prueba');
                 res.status(500).json({
                     status: 'error',
                     message: 'Error enviando email de prueba: ' + result.error
@@ -278,7 +272,7 @@ class SessionController {
             }
 
         } catch (error) {
-            console.error('❌ [SessionController] Error en test email:', error.message);
+            console.error('[SessionController] Error en test email:', error.message);
             res.status(500).json({
                 status: 'error',
                 message: error.message

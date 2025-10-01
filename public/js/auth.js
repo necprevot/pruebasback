@@ -1,6 +1,3 @@
-/**
- * Sistema de Autenticación Cliente - VERSIÓN CORREGIDA
- */
 
 // ==========================================
 // CONFIGURACIÓN
@@ -210,20 +207,18 @@ const Auth = {
     }
   },
   
-  // NUEVO: Sincronizar carrito con usuario
+  //  Sincronizar carrito con usuario
   async syncUserCart(user) {
     try {
-      console.log('🔄 Sincronizando carrito con usuario:', user.email);
       
       if (user.cart) {
         localStorage.setItem('bbfermentos_cart_id', user.cart);
         localStorage.setItem('bbfermentos_cart_timestamp', Date.now().toString());
-        console.log('✅ Carrito de usuario sincronizado:', user.cart);
       } else {
-        console.log('⚠️ Usuario no tiene carrito asignado');
+        console.log('Usuario no tiene carrito asignado');
       }
     } catch (error) {
-      console.error('❌ Error sincronizando carrito:', error);
+      console.error('Error sincronizando carrito:', error);
     }
   },
   
@@ -243,7 +238,7 @@ const Auth = {
         return;
       }
       
-      // NUEVO: Validar confirmación de contraseña
+      // Validar confirmación de contraseña
       const confirmPassword = document.getElementById('confirmPassword')?.value;
       if (confirmPassword && userData.password !== confirmPassword) {
         UI.showFieldError('confirmPassword', 'Las contraseñas no coinciden');
@@ -318,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   if (registerForm) {
-    // NUEVO: Validación en tiempo real de confirmación de contraseña
+    // Validación en tiempo real de confirmación de contraseña
     const passwordField = document.getElementById('password');
     const confirmPasswordField = document.getElementById('confirmPassword');
     
@@ -359,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   Auth.updateUI();
   
-  // NUEVO: Configurar cookie al cargar si ya está autenticado
+  // Configurar cookie al cargar si ya está autenticado
   const token = Storage.getToken();
   if (token) {
     document.cookie = `bbfermentos_auth_token=${token}; path=/; max-age=86400`;
@@ -377,5 +372,3 @@ window.BBAuth = {
   getUser: Storage.getUser.bind(Storage),
   showAlert: UI.showAlert
 };
-
-console.log('🔐 Auth mejorado cargado');
