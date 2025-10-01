@@ -31,6 +31,13 @@ class SessionController {
 
             console.log('✅ [SessionController] Login exitoso - Token JWT generado');
 
+            res.cookie('bbfermentos_auth_token', result.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000 // 24 horas
+        });
+        
             // Respuesta con token JWT válido
             res.json({
                 status: 'success',

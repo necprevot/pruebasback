@@ -111,18 +111,26 @@ export const optionalAuth = (req, res, next) => {
  * Autenticación para vistas (redirige al login)
  */
 export const authenticateView = (req, res, next) => {
+
+  console.log('🔐 [AuthView] Verificando autenticación para vista');
+  console.log('🍪 [AuthView] Cookies disponibles:', Object.keys(req.cookies || {}));
   // Leer token de cookie
   const token = req.cookies?.bbfermentos_auth_token;
   
   if (!token) {
     console.log('❌ [AuthView] No hay token de autenticación');
+    const redirectUrl = encodeURIComponent(req.originalUrl);
     return res.redirect('/login?redirect=' + encodeURIComponent(req.originalUrl));
   }
   
+console.log('🎫 [AuthView] Token encontrado, verificando...');
+    
+    // Configurar el header Authorization para que Passport pueda leerlo
+    req.headers.authorization = `Bearer ${token}`;
+
   // Usar passport para autenticar
   passport.authenticate('jwt', { 
     session: false,
-    passReqToCallback: true
   }, (err, user, info) => {
     if (err) {
       console.error('❌ [AuthView] Error:', err);

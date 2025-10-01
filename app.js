@@ -56,14 +56,16 @@ const startServer = async () => {
         configureExpress(app);
         configureHandlebars(app);
         
+        initializePassport();
+        app.use(passport.initialize());
+
         console.log('🔌 Conectando a base de datos...');
         await connectDB();
         await waitForConnection();
         console.log('✅ Base de datos conectada');
         
         console.log('🔐 Inicializando estrategias de Passport...');
-        initializePassport();
-        app.use(passport.initialize());
+        
         console.log('✅ Passport inicializado con estrategias: jwt, current');
         
         app.set('io', io);
