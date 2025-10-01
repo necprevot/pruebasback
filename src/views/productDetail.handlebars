@@ -300,14 +300,16 @@ async function addToCart() {
         return;
     }
     
+    // MEJORADO: Verificar carrito antes de agregar
     if (!currentCartId) {
-        showAlert('Error: Carrito no inicializado', 'danger');
-        await initializeCart();
-        return;
+        console.log('⚠️ No hay carrito, creando uno nuevo...');
+        const created = await createNewCartInternal();
+        if (!created) {
+            return;
+        }
     }
     
     try {
-        // Agregar productos uno por uno según la cantidad
         for (let i = 0; i < quantity; i++) {
             const response = await fetch(`/api/carts/${currentCartId}/product/${productData.id}`, {
                 method: 'POST',
@@ -316,6 +318,19 @@ async function addToCart() {
                 }
             });
             
+            // NUEVO: Manejar carrito no autorizado
+            if (response.status === 403) {
+                console.log('🚫 Carrito no autorizado, creando uno nuevo...');
+                CartSession.clear();
+                const created = await createNewCartInternal();
+                if (!created) {
+                    throw new Error('No se pudo crear un nuevo carrito');
+                }
+                showAlert('Creando nuevo carrito...', 'info');
+                setTimeout(() => addToCart(), 1000);
+                return;
+            }
+            
             if (!response.ok) {
                 const error = await response.json();
                 throw new Error(error.message);
@@ -323,14 +338,8 @@ async function addToCart() {
         }
         
         showAlert(`${quantity} x ${productData.title} agregado al carrito`, 'success');
-        
-        // Resetear cantidad
         document.getElementById('productQuantity').value = 1;
-        
-        // Actualizar contador del carrito
         await updateCartDisplay();
-        
-        // Guardar carrito en sesión
         CartSession.save(currentCartId);
         
     } catch (error) {
@@ -339,6 +348,29 @@ async function addToCart() {
     }
 }
 
+async function createNewCartInternal() {
+    try {
+        const response = await fetch('/api/carts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            currentCartId = data.cart._id;
+            CartSession.save(currentCartId);
+            console.log('✅ Nuevo carrito creado:', currentCartId);
+            await updateCartDisplay();
+            return true;
+        } else {
+            throw new Error('Error al crear carrito');
+        }
+    } catch (error) {
+        console.error('❌ Error creando carrito:', error);
+        showAlert('No se pudo crear el carrito', 'danger');
+        return false;
+    }
+}
 // Comprar ahora
 async function buyNow() {
     await addToCart();

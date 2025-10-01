@@ -3,6 +3,7 @@
  */
 
 import passport from 'passport';
+import cookieParser from 'cookie-parser';
 
 // ==========================================
 // MIDDLEWARE BASE
@@ -110,18 +111,31 @@ export const optionalAuth = (req, res, next) => {
  * Autenticación para vistas (redirige al login)
  */
 export const authenticateView = (req, res, next) => {
-  passport.authenticate('jwt', { session: false }, (err, user, info) => {
+  // Leer token de cookie
+  const token = req.cookies?.bbfermentos_auth_token;
+  
+  if (!token) {
+    console.log('❌ [AuthView] No hay token de autenticación');
+    return res.redirect('/login?redirect=' + encodeURIComponent(req.originalUrl));
+  }
+  
+  // Usar passport para autenticar
+  passport.authenticate('jwt', { 
+    session: false,
+    passReqToCallback: true
+  }, (err, user, info) => {
     if (err) {
+      console.error('❌ [AuthView] Error:', err);
       return res.redirect('/login?error=auth_error');
     }
     
     if (!user) {
-      req.session = req.session || {};
-      req.session.returnTo = req.originalUrl;
-      return res.redirect('/login?error=auth_required');
+      console.log('❌ [AuthView] Token inválido');
+      return res.redirect('/login?error=invalid_token');
     }
     
     req.user = user;
+    console.log('✅ [AuthView] Usuario autenticado:', user.email, 'Role:', user.role);
     next();
   })(req, res, next);
 };
