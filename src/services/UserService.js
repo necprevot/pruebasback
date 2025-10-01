@@ -3,17 +3,15 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import UserRepository from '../repositories/UserRepository.js';
 import CartDAO from '../dao/CartDAO.js';
-import emailService from '../services/EmailService.js';
-import UserDAO from '../dao/UserDAO.js';
+// ✅ ACTUALIZADO: Import relativo correcto
+import emailService from './EmailService.js';
 
 class UserService {
     constructor() {
         // PATRÓN REPOSITORY: Usar Repository en lugar de DAO directo
         this.userRepository = new UserRepository();
         
-        // Para algunas operaciones específicas seguimos usando DAO
-        // (como crear carrito o buscar con password)
-        this.userDAO = new UserDAO();
+        // Para crear carritos usamos DAO directamente
         this.cartDAO = new CartDAO();
         
         this.saltRounds = 10;
@@ -65,9 +63,9 @@ class UserService {
                 );
                 
                 if (emailResult.success) {
-                    console.log('✅ [UserService] Email de bienvenida enviado exitosamente:', emailResult.messageId);
+                    console.log('✅ [UserService] Email de bienvenida enviado:', emailResult.messageId);
                 } else {
-                    console.error('⚠️ [UserService] Error enviando email de bienvenida:', emailResult.message);
+                    console.error('⚠️ [UserService] Error enviando email:', emailResult.message);
                 }
                 
             } catch (emailError) {

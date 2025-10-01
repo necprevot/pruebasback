@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import ProductManager from '../managers/ProductManager.js';
 import CartManager from '../managers/CartManager.js';
-// ✅ IMPORTAR SOLO LOS MIDDLEWARES PARA VISTAS
-import { authenticateView, authorizeView } from '../middleware/authViews.js';
+// ✅ ACTUALIZADO: Importar desde auth.js unificado
+import { authenticateView, authorizeView } from '../middleware/auth.js';
 
 const router = Router();
 const productManager = new ProductManager();
@@ -11,7 +11,6 @@ const cartManager = new CartManager();
 // Ruta principal - Home con filtros y paginación
 router.get('/products', async (req, res) => {
     try {
-        // Extraer parámetros de la URL
         const {
             page = 1,
             limit = 2,
@@ -24,7 +23,6 @@ router.get('/products', async (req, res) => {
             sort = 'status_desc'
         } = req.query;
 
-        // Opciones para el manager
         const options = {
             page: parseInt(page),
             limit: parseInt(limit),
@@ -39,7 +37,6 @@ router.get('/products', async (req, res) => {
 
         const productsResult = await productManager.getProducts(options);
 
-        // Obtener categorías
         let categories = [];
         try {
             categories = await productManager.getCategories();
@@ -47,7 +44,6 @@ router.get('/products', async (req, res) => {
             categories = ['ofertas', 'nuevos', 'mas vendidos', 'nuevo'];
         }
 
-        // Obtener estadísticas
         let stats = null;
         try {
             stats = await productManager.getProductStats();
@@ -123,8 +119,8 @@ router.get('/', (req, res) => {
 // RUTA PROTEGIDA: Panel de Administración
 // ========================================
 router.get('/realtimeproducts', 
-    authenticateView,           // ✅ Middleware para vistas que redirige al login
-    authorizeView('admin'),     // ✅ Middleware para vistas que muestra error 403
+    authenticateView,           // ✅ Middleware unificado
+    authorizeView('admin'),     // ✅ Middleware unificado
     async (req, res) => {
         try {
             const result = await productManager.getProducts({
@@ -149,7 +145,8 @@ router.get('/realtimeproducts',
     }
 );
 
-// Ruta para ver productos por categoría
+// ... resto de las rutas sin cambios
+
 router.get('/category/:category', async (req, res) => {
     try {
         const { category } = req.params;
@@ -216,7 +213,6 @@ router.get('/category/:category', async (req, res) => {
     }
 });
 
-// Ruta para ver un carrito específico
 router.get('/carts/:cid', async (req, res) => {
     try {
         const { cid } = req.params;
@@ -225,7 +221,6 @@ router.get('/carts/:cid', async (req, res) => {
 
         const cartPlain = cart.toObject ? cart.toObject() : cart;
 
-        // Calcular total de items
         const totalItems = cartPlain.products ?
             cartPlain.products.reduce((sum, item) => sum + item.quantity, 0) : 0;
 
@@ -251,7 +246,6 @@ router.get('/carts/:cid', async (req, res) => {
     }
 });
 
-// Ruta de administración
 router.get('/admin', async (req, res) => {
     try {
         const [stats, categories, recentProducts] = await Promise.all([
@@ -280,12 +274,10 @@ router.get('/admin', async (req, res) => {
     }
 });
 
-// Ruta para producto individual
 router.get('/products/:pid', async (req, res) => {
     try {
         const { pid } = req.params;
 
-        // Validar formato de ID
         if (!pid || !/^[0-9a-fA-F]{24}$/.test(pid)) {
             return res.status(400).render('error', {
                 title: 'ID de producto inválido',
@@ -296,10 +288,8 @@ router.get('/products/:pid', async (req, res) => {
             });
         }
 
-        // Obtener el producto específico
         const product = await productManager.getProductById(pid);
 
-        // Obtener productos relacionados
         let relatedProducts = [];
         try {
             relatedProducts = await productManager.getRelatedProducts(pid, 4);
@@ -307,7 +297,6 @@ router.get('/products/:pid', async (req, res) => {
             relatedProducts = [];
         }
 
-        // Obtener categorías para navegación
         let categories = [];
         try {
             categories = await productManager.getCategories();
@@ -364,7 +353,6 @@ router.get('/products/:pid', async (req, res) => {
 // RUTAS DE AUTENTICACIÓN
 // ========================================
 
-// Ruta de login
 router.get('/login', (req, res) => {
     try {
         res.render('login', {
@@ -381,7 +369,6 @@ router.get('/login', (req, res) => {
     }
 });
 
-// Ruta de registro
 router.get('/register', (req, res) => {
     try {
         res.render('register', {
@@ -398,7 +385,6 @@ router.get('/register', (req, res) => {
     }
 });
 
-// Ruta para solicitar reset de contraseña
 router.get('/forgot-password', (req, res) => {
     try {
         res.render('forgotPassword', {
@@ -415,12 +401,10 @@ router.get('/forgot-password', (req, res) => {
     }
 });
 
-// Ruta para resetear contraseña con token
 router.get('/reset-password/:token', (req, res) => {
     try {
         const { token } = req.params;
         
-        // Validar que hay token
         if (!token) {
             return res.redirect('/forgot-password');
         }
@@ -441,7 +425,6 @@ router.get('/reset-password/:token', (req, res) => {
     }
 });
 
-// Ruta de perfil
 router.get('/profile', async (req, res) => {
     try {
         res.render('profile', {
@@ -458,7 +441,6 @@ router.get('/profile', async (req, res) => {
     }
 });
 
-// Ruta de logout
 router.get('/logout', (req, res) => {
     res.redirect('/login?message=logged_out');
 });
