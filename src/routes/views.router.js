@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import ProductManager from '../managers/ProductManager.js';
 import CartManager from '../managers/CartManager.js';
+import { authenticate, authorize } from '../middleware/auth.js';
+
 
 const router = Router();
 const productManager = new ProductManager();
@@ -452,5 +454,32 @@ router.get('/profile', async (req, res) => {
 router.get('/logout', (req, res) => {
     res.redirect('/login?message=logged_out');
 });
+
+router.get('/realtimeproducts', 
+    authenticate,           // ✅ Verificar que está autenticado
+    authorize('admin'),     // ✅ Verificar que es admin
+    async (req, res) => {
+        try {
+            const result = await productManager.getProducts({
+                limit: 100,
+                status: undefined
+            });
+
+            res.render('realTimeProducts', {
+                title: '🔧 Panel de Administración - Productos en Tiempo Real',
+                products: result.payload,
+                user: req.user  // ✅ Pasar info del usuario admin a la vista
+            });
+        } catch (error) {
+            console.error('Error en ruta realtimeproducts:', error);
+            res.render('realTimeProducts', {
+                title: '🔧 Panel de Administración - Productos en Tiempo Real',
+                products: [],
+                error: 'Error al cargar productos: ' + error.message,
+                user: req.user
+            });
+        }
+    }
+);
 
 export default router;

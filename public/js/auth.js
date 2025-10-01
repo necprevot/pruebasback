@@ -584,6 +584,50 @@ function integrateWithExistingCart() {
     }
 }
 
+function updateAuthUI() {
+    const userData = getUserData();
+    const isAuth = isAuthenticated();
+    
+    console.log('🔄 Actualizando UI de autenticación:', { isAuth, userData });
+    
+    // Actualizar navegación
+    const authLinks = document.querySelectorAll('.auth-link');
+    authLinks.forEach(link => {
+        const authRequired = link.dataset.authRequired === 'true';
+        const roleRequired = link.dataset.roleRequired; // 'admin', 'premium', etc.
+        
+        if (authRequired) {
+            if (isAuth) {
+                // Verificar rol si es necesario
+                if (roleRequired) {
+                    if (userData && userData.role === roleRequired) {
+                        link.style.display = 'inline';
+                        console.log('✅ Mostrando link para rol:', roleRequired);
+                    } else {
+                        link.style.display = 'none';
+                        console.log('❌ Ocultando link, rol requerido:', roleRequired, 'rol actual:', userData?.role);
+                    }
+                } else {
+                    link.style.display = 'inline';
+                }
+                
+                // Actualizar nombre de usuario
+                if (userData && link.textContent.includes('Usuario')) {
+                    link.textContent = `👤 ${userData.first_name}`;
+                }
+            } else {
+                link.style.display = 'none';
+            }
+        } else {
+            // Links para no autenticados
+            if (isAuth) {
+                link.style.display = 'none';
+            } else {
+                link.style.display = 'inline';
+            }
+        }
+    });
+}
 
 // Función que se ejecuta en todas las páginas
 function initializeAuth() {

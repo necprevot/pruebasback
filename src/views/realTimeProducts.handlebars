@@ -1,35 +1,12 @@
-<h2>Productos en Tiempo Real</h2>
+<h2>🔧 Panel de Administración - Productos en Tiempo Real</h2>
 
 <div id="status" class="mb-3">
     <span id="connectionStatus" style="color: orange;">Conectando...</span>
 </div>
 
-<!-- Interruptor de Administrador -->
-<div class="admin-toggle mb-3">
-    <label for="adminToggle" style="display: flex; align-items: center; gap: 10px; font-weight: bold;">
-        <span>Modo Administrador:</span>
-        <select id="adminToggle" style="width: auto; padding: 5px;">
-            <option value="false">No</option>
-            <option value="true">Sí</option>
-        </select>
-        <span id="adminStatus" class="text-danger">Desactivado</span>
-    </label>
-</div>
-
-{{#if success}}
-    <div class="alert alert-success">
-        {{success}}
-    </div>
-{{/if}}
-
-{{#if error}}
-    <div class="alert alert-danger">
-        {{error}}
-    </div>
-{{/if}}
-
-<div id="adminSection" style="display: none;">
-    <h3>Agregar Nuevo Producto</h3>
+<!-- ✅ SECCIÓN SIEMPRE VISIBLE PARA ADMIN -->
+<div id="adminSection">
+    <h3>➕ Crear Nuevo Producto</h3>
     <form id="productForm">
         <div class="form-group">
             <label for="title">Título:</label>
@@ -71,14 +48,10 @@
             <small>Solo ingresa el nombre del archivo. Las imágenes deben estar en public/img/</small>
         </div>
         
-        <button type="submit" class="btn-primary">Agregar Producto</button>
+        <button type="submit" class="btn-primary">➕ Crear Producto</button>
     </form>
     
     <hr>
-</div>
-
-<div id="nonAdminMessage" class="alert alert-danger">
-    <strong>Acceso restringido:</strong> Solo los administradores pueden agregar, editar o eliminar productos. Active el modo administrador para acceder a estas funciones.
 </div>
 
 <!-- Modal de Edición -->
@@ -139,69 +112,54 @@
     </div>
 </div>
 
-<h3>Lista de Productos</h3>
+<h3>📦 Lista de Productos</h3>
 <div id="productsList">
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    console.log('🔄 Iniciando realTimeProducts...');
+    console.log('🔄 Iniciando realTimeProducts para ADMIN...');
     
+function getAuthToken() {
+        return localStorage.getItem('bbfermentos_auth_token');
+    }
+    
+    // ✅ CONECTAR CON AUTENTICACIÓN
+    const token = getAuthToken();
+    
+    if (!token) {
+        console.error('❌ No hay token de autenticación');
+        alert('No estás autenticado. Redirigiendo al login...');
+        window.location.href = '/login';
+    }
+    
+    // ✅ CONFIGURAR SOCKET CON TOKEN
+    const socket = io({
+        auth: {
+            token: token
+        }
+    });
+
+
     const socket = io();
     const productsList = document.getElementById('productsList');
     const connectionStatus = document.getElementById('connectionStatus');
     const productForm = document.getElementById('productForm');
     const editProductForm = document.getElementById('editProductForm');
-    const adminToggle = document.getElementById('adminToggle');
-    const adminStatus = document.getElementById('adminStatus');
-    const adminSection = document.getElementById('adminSection');
-    const nonAdminMessage = document.getElementById('nonAdminMessage');
     const editModal = document.getElementById('editModal');
 
-    let isAdmin = false;
-
-    // Verificar que todos los elementos existan
+    // ✅ Verificar que todos los elementos existan
     console.log('🔍 Verificando elementos DOM:', {
         productsList: !!productsList,
         connectionStatus: !!connectionStatus,
-        productForm: !!productForm,
-        adminToggle: !!adminToggle
+        productForm: !!productForm
     });
-
-    adminToggle.addEventListener('change', (e) => {
-        isAdmin = e.target.value === 'true';
-        console.log('👑 Admin mode changed to:', isAdmin);
-        updateAdminInterface();
-    });
-
-    function updateAdminInterface() {
-        console.log('🔧 Updating interface, isAdmin:', isAdmin);
-        
-        if (isAdmin) {
-            adminStatus.textContent = 'Activado';
-            adminStatus.className = 'text-success';
-            adminSection.style.display = 'block';
-            nonAdminMessage.style.display = 'none';
-        } else {
-            adminStatus.textContent = 'Desactivado';
-            adminStatus.className = 'text-danger';
-            adminSection.style.display = 'none';
-            nonAdminMessage.style.display = 'block';
-        }
-        
-        const currentProducts = JSON.parse(sessionStorage.getItem('currentProducts') || '[]');
-        console.log('📦 Current products from session:', currentProducts.length);
-        if (currentProducts.length > 0) {
-            renderProducts(currentProducts);
-        }
-    }
 
     socket.on('connect', () => {
         console.log('✅ Conectado al servidor con ID:', socket.id);
         connectionStatus.textContent = 'Conectado ✓';
         connectionStatus.style.color = 'green';
         
-        // Solicitar productos inmediatamente después de conectar
         console.log('📡 Solicitando productos iniciales...');
         socket.emit('requestProducts');
     });
@@ -246,8 +204,7 @@
 
     function renderProducts(products) {
         console.log('🎨 Renderizando productos:', {
-            count: products ? products.length : 0,
-            isAdmin: isAdmin
+            count: products ? products.length : 0
         });
         
         if (!productsList) {
@@ -303,18 +260,12 @@
                     }
                     
                     <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                        ${isAdmin ? `
-                            <button onclick="editProduct('${product._id}')" style="background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px;">
-                                ✏️ Editar
-                            </button>
-                            <button onclick="deleteProduct('${product._id}')" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px;">
-                                🗑️ Eliminar
-                            </button>
-                        ` : `
-                            <div style="color: #6c757d; font-style: italic; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 12px;">
-                                Solo administradores pueden editar o eliminar productos
-                            </div>
-                        `}
+                        <button onclick="editProduct('${product._id}')" style="background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                            ✏️ Editar
+                        </button>
+                        <button onclick="deleteProduct('${product._id}')" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                            🗑️ Eliminar
+                        </button>
                     </div>
                 </div>
             `;
@@ -328,11 +279,6 @@
     // Función para editar producto
     window.editProduct = function(productId) {
         console.log('✏️ Función editProduct llamada para:', productId);
-        
-        if (!isAdmin) {
-            alert('Solo los administradores pueden editar productos. Active el modo administrador.');
-            return;
-        }
         
         const currentProducts = JSON.parse(sessionStorage.getItem('currentProducts') || '[]');
         const product = currentProducts.find(p => p._id === productId);
@@ -366,11 +312,6 @@
     window.deleteProduct = function(productId) {
         console.log('🗑️ Función deleteProduct llamada para:', productId);
         
-        if (!isAdmin) {
-            alert('Solo los administradores pueden eliminar productos. Active el modo administrador.');
-            return;
-        }
-        
         if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
             console.log('✅ Confirmado, enviando deleteProduct al servidor');
             socket.emit('deleteProduct', productId);
@@ -386,11 +327,6 @@
     // Event listeners
     editProductForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        
-        if (!isAdmin) {
-            alert('Solo los administradores pueden editar productos. Active el modo administrador.');
-            return;
-        }
         
         const formData = new FormData(editProductForm);
         const productId = document.getElementById('editProductId').value;
@@ -420,11 +356,6 @@
 
     productForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        
-        if (!isAdmin) {
-            alert('Solo los administradores pueden agregar productos. Active el modo administrador.');
-            return;
-        }
         
         const formData = new FormData(productForm);
         const thumbnails = formData.get('thumbnails');
@@ -489,9 +420,6 @@
         }
     });
 
-    // Inicializar interfaz
-    updateAdminInterface();
-    
     console.log('🚀 Script de realTimeProducts inicializado completamente');
     
     // Verificar si hay productos del servidor (renderizados por Handlebars)

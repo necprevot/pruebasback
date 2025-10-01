@@ -13,11 +13,16 @@
             <div>
                 <h1>BBFermentos</h1>
                 <nav>
-                    <a href="/products">Catálogo</a> 
-                    <a href="/realtimeproducts">Productos en Tiempo Real</a>
+                    <a href="/products">Catálogo</a>
+                    
+                    <!-- ✅ LINK SOLO VISIBLE PARA ADMIN -->
+                    <a href="/realtimeproducts" class="auth-link" data-auth-required="true" data-role-required="admin" style="display: none;">
+                        🔧 Panel Admin
+                    </a>
+                    
                     <a href="#" onclick="goToCart()">🛒 Ver Mi Carrito</a>
                     
-                    <!-- Enlaces de autenticación (se muestran/ocultan con JavaScript) -->
+                    <!-- Enlaces de autenticación -->
                     <a href="/login" class="auth-link" data-auth-required="false">🔑 Iniciar Sesión</a>
                     <a href="/register" class="auth-link" data-auth-required="false">👤 Registro</a>
                     <a href="/profile" class="auth-link" data-auth-required="true" style="display: none;">👤 Mi Perfil</a>
@@ -49,9 +54,62 @@
             }
         }
 
+        // ✅ ACTUALIZAR updateAuthUI para manejar roles
+        function updateAuthUI() {
+            const userData = getUserData();
+            const isAuth = isAuthenticated();
+            
+            // Actualizar navegación
+            const authLinks = document.querySelectorAll('.auth-link');
+            authLinks.forEach(link => {
+                const authRequired = link.dataset.authRequired === 'true';
+                const roleRequired = link.dataset.roleRequired; // 'admin', 'premium', etc.
+                
+                if (authRequired) {
+                    if (isAuth) {
+                        // Verificar rol si es necesario
+                        if (roleRequired) {
+                            if (userData && userData.role === roleRequired) {
+                                link.style.display = 'inline';
+                            } else {
+                                link.style.display = 'none';
+                            }
+                        } else {
+                            link.style.display = 'inline';
+                        }
+                        
+                        // Actualizar nombre de usuario
+                        if (userData && link.textContent.includes('Usuario')) {
+                            link.textContent = `👤 ${userData.first_name}`;
+                        }
+                    } else {
+                        link.style.display = 'none';
+                    }
+                } else {
+                    // Links para no autenticados
+                    if (isAuth) {
+                        link.style.display = 'none';
+                    } else {
+                        link.style.display = 'inline';
+                    }
+                }
+            });
+        }
+
+        // Helper functions necesarias
+        function getUserData() {
+            const userData = localStorage.getItem('bbfermentos_user_data');
+            return userData ? JSON.parse(userData) : null;
+        }
+
+        function isAuthenticated() {
+            return !!localStorage.getItem('bbfermentos_auth_token');
+        }
+
         // Inicializar autenticación al cargar cualquier página
         document.addEventListener('DOMContentLoaded', () => {
             // La función initializeAuth() ya se ejecuta en auth.js
+            updateAuthUI();
             
             // Verificar si hay mensajes en la URL
             const urlParams = new URLSearchParams(window.location.search);

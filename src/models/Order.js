@@ -1,6 +1,7 @@
 /**
- * Modelo de Orden de Compra
+ * Modelo de Orden de Compra - CORREGIDO
  * Representa una orden realizada por un usuario
+ * ✅ Sin índices duplicados
  */
 
 import mongoose from 'mongoose';
@@ -47,22 +48,21 @@ const shippingAddressSchema = new mongoose.Schema({
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
-  // Identificador único de orden
+  // ✅ CORRECCIÓN: Eliminar unique: true aquí si vamos a usar schema.index()
+  // O mantener unique: true aquí y eliminar el schema.index() de abajo
   orderNumber: {
     type: String,
-    unique: true,
+    unique: true,  // ✅ Opción 1: Mantener solo esto
     required: true
   },
   
-  // Usuario que realiza la orden
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
-    index: true
+    index: true  // ✅ Este index simple está bien
   },
   
-  // Items de la orden
   items: {
     type: [orderItemSchema],
     required: true,
@@ -74,7 +74,6 @@ const orderSchema = new mongoose.Schema({
     }
   },
   
-  // Totales
   subtotal: {
     type: Number,
     required: true,
@@ -107,22 +106,19 @@ const orderSchema = new mongoose.Schema({
     min: [0, 'El total no puede ser negativo']
   },
   
-  // Dirección de envío
   shippingAddress: {
     type: shippingAddressSchema,
     required: true
   },
   
-  // Estado de la orden
   status: {
     type: String,
     enum: Object.values(ORDER_STATUS),
     default: ORDER_STATUS.PENDING,
     required: true,
-    index: true
+    index: true  // ✅ Este index simple está bien
   },
   
-  // Historial de estados
   statusHistory: [{
     status: {
       type: String,
@@ -140,7 +136,6 @@ const orderSchema = new mongoose.Schema({
     }
   }],
   
-  // Información de pago
   payment: {
     method: {
       type: String,
@@ -158,7 +153,6 @@ const orderSchema = new mongoose.Schema({
     paymentDetails: mongoose.Schema.Types.Mixed
   },
   
-  // Información de envío
   tracking: {
     company: String,
     trackingNumber: String,
@@ -167,11 +161,9 @@ const orderSchema = new mongoose.Schema({
     deliveredAt: Date
   },
   
-  // Notas y comentarios
   notes: String,
   adminNotes: String,
   
-  // Cancelación
   cancellation: {
     reason: String,
     cancelledAt: Date,
@@ -190,12 +182,18 @@ const orderSchema = new mongoose.Schema({
   versionKey: false
 });
 
-// Índices compuestos para búsquedas comunes
-orderSchema.index({ user: 1, createdAt: -1 });
-orderSchema.index({ status: 1, createdAt: -1 });
-orderSchema.index({ orderNumber: 1 }, { unique: true });
+// ✅ ÍNDICES COMPUESTOS (sin duplicados)
+// Solo declarar aquí si NO los declaraste arriba con index: true
 
-// Virtual para número de items
+// Ya tenemos index en 'user' y 'status' arriba, así que estos son adicionales:
+orderSchema.index({ user: 1, createdAt: -1 });  // Para búsquedas de órdenes por usuario
+orderSchema.index({ status: 1, createdAt: -1 }); // Para búsquedas por estado
+
+// ❌ ELIMINAR ESTA LÍNEA - Es la que causa el warning:
+// orderSchema.index({ orderNumber: 1 }, { unique: true });
+// Ya está definido como unique: true en el campo arriba
+
+// ✅ Virtual para número de items
 orderSchema.virtual('itemCount').get(function() {
   return this.items.reduce((sum, item) => sum + item.quantity, 0);
 });
@@ -207,7 +205,6 @@ orderSchema.statics.generateOrderNumber = async function() {
   const year = date.getFullYear().toString().slice(-2);
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   
-  // Buscar el último número de orden del mes
   const lastOrder = await this.findOne({
     orderNumber: new RegExp(`^${prefix}${year}${month}`)
   }).sort({ orderNumber: -1 });
@@ -223,23 +220,13 @@ orderSchema.statics.generateOrderNumber = async function() {
 
 // Método para calcular totales
 orderSchema.methods.calculateTotals = function() {
-  // Calcular subtotal
   this.subtotal = this.items.reduce((sum, item) => sum + item.subtotal, 0);
-  
-  // Aplicar descuento
   const discountAmount = this.discount || 0;
-  
-  // Calcular envío (gratis si supera cierto monto)
   const FREE_SHIPPING_THRESHOLD = 50000;
   this.shipping = this.subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 5000;
-  
-  // Calcular impuestos (IVA 19% en Chile)
   const taxableAmount = this.subtotal - discountAmount;
   this.tax = Math.round(taxableAmount * 0.19);
-  
-  // Calcular total
   this.total = this.subtotal - discountAmount + this.shipping + this.tax;
-  
   return this;
 };
 
@@ -254,7 +241,6 @@ orderSchema.methods.updateStatus = function(newStatus, notes = '', updatedBy = n
     updatedBy
   });
   
-  // Actualizar fechas específicas según el estado
   if (newStatus === ORDER_STATUS.SHIPPED && !this.tracking.shippedAt) {
     this.tracking.shippedAt = new Date();
   }
