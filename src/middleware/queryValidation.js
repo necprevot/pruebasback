@@ -123,7 +123,6 @@ export const validateProductQuery = (req, res, next) => {
         next();
 
     } catch (error) {
-        console.error(' Error en validación de query:', error);
         // En caso de error, usar valores por defecto
         req.query = {
             page: 1,
@@ -170,7 +169,6 @@ export const validateCartParams = (req, res, next) => {
         next();
 
     } catch (error) {
-        console.error('Error en validación de parámetros de carrito:', error);
         res.status(500).json({
             status: 'error',
             message: 'Error interno del servidor'

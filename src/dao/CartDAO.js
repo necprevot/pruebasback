@@ -17,7 +17,6 @@ class CartDAO extends BaseDAO {
             
             return cart;
         } catch (error) {
-            console.error(' [CartDAO] Error creando carrito vacío:', error.message);
             throw error;
         }
     }
@@ -28,7 +27,6 @@ class CartDAO extends BaseDAO {
             const cart = await this.findById(cartId, 'products.product');
             return cart;
         } catch (error) {
-            console.error(' [CartDAO] Error obteniendo carrito:', error.message);
             throw error;
         }
     }

@@ -15,7 +15,6 @@ class CartRepository extends BaseRepository {
         try {
             return await this.dao.createEmptyCart();
         } catch (error) {
-            console.error('[CartRepository] Error creando carrito:', error.message);
             throw error;
         }
     }
@@ -27,7 +26,6 @@ class CartRepository extends BaseRepository {
         try {
             return await this.dao.getCartWithProducts(cartId);
         } catch (error) {
-            console.error('[CartRepository] Error obteniendo carrito:', error.message);
             throw error;
         }
     }
@@ -44,7 +42,6 @@ class CartRepository extends BaseRepository {
             
             return await cartManager.addProductToCart(cartId, productId);
         } catch (error) {
-            console.error(' [CartRepository] Error agregando producto:', error.message);
             throw error;
         }
     }
@@ -59,7 +56,6 @@ class CartRepository extends BaseRepository {
             
             return await cartManager.updateProductQuantity(cartId, productId, quantity);
         } catch (error) {
-            console.error(' [CartRepository] Error actualizando cantidad:', error.message);
             throw error;
         }
     }
@@ -75,7 +71,6 @@ class CartRepository extends BaseRepository {
             
             return await cartManager.removeProductFromCart(cartId, productId);
         } catch (error) {
-            console.error(' [CartRepository] Error eliminando producto:', error.message);
             throw error;
         }
     }
@@ -91,7 +86,6 @@ class CartRepository extends BaseRepository {
             
             return await cartManager.clearCart(cartId);
         } catch (error) {
-            console.error(' [CartRepository] Error vaciando carrito:', error.message);
             throw error;
         }
     }
@@ -104,7 +98,6 @@ class CartRepository extends BaseRepository {
             const cart = await this.getCartWithProducts(cartId);
             return await cart.calculateTotal();
         } catch (error) {
-            console.error(' [CartRepository] Error calculando total:', error.message);
             throw error;
         }
     }

@@ -156,7 +156,7 @@ class OrderService {
       
       // Enviar email de confirmación (sin bloquear la respuesta)
       this.sendOrderConfirmationEmail(user.email, user.first_name, order)
-        .catch(err => console.error('Error enviando email de confirmación:', err));
+        .catch(err => );
 
       // Retornar orden con información de productos no disponibles si los hay
       return {
@@ -166,7 +166,6 @@ class OrderService {
 
     } catch (error) {
       await session.abortTransaction();
-      console.error('[OrderService] Error creando orden:', error);
       throw error;
     } finally {
       session.endSession();
@@ -193,7 +192,6 @@ class OrderService {
 
       return order;
     } catch (error) {
-      console.error('[OrderService] Error obteniendo orden:', error);
       throw error;
     }
   }
@@ -229,7 +227,6 @@ class OrderService {
         }
       };
     } catch (error) {
-      console.error('[OrderService] Error obteniendo órdenes:', error);
       throw error;
     }
   }
@@ -272,7 +269,6 @@ class OrderService {
         }
       };
     } catch (error) {
-      console.error('[OrderService] Error obteniendo todas las órdenes:', error);
       throw error;
     }
   }
@@ -294,15 +290,14 @@ class OrderService {
       // Enviar email según el nuevo estado
       if (newStatus === ORDER_STATUS.SHIPPED) {
         this.sendOrderShippedEmail(order.user.email, order.user.first_name, order)
-          .catch(err => console.error('Error enviando email:', err));
+          .catch(err => );
       } else if (newStatus === ORDER_STATUS.DELIVERED) {
         this.sendOrderDeliveredEmail(order.user.email, order.user.first_name, order)
-          .catch(err => console.error('Error enviando email:', err));
+          .catch(err => );
       }
 
       return order;
     } catch (error) {
-      console.error('[OrderService] Error actualizando estado:', error);
       throw error;
     }
   }
@@ -323,11 +318,10 @@ class OrderService {
 
       // Enviar email de confirmación de pago
       this.sendPaymentConfirmationEmail(order.user.email, order.user.first_name, order)
-        .catch(err => console.error('Error enviando email:', err));
+        .catch(err => );
 
       return order;
     } catch (error) {
-      console.error('[OrderService] Error confirmando pago:', error);
       throw error;
     }
   }
@@ -365,12 +359,11 @@ class OrderService {
 
       // Enviar email de cancelación
       this.sendOrderCancelledEmail(order.user.email, order.user.first_name, order, reason)
-        .catch(err => console.error('Error enviando email:', err));
+        .catch(err => );
 
       return order;
     } catch (error) {
       await session.abortTransaction();
-      console.error('[OrderService] Error cancelando orden:', error);
       throw error;
     } finally {
       session.endSession();
@@ -427,7 +420,6 @@ class OrderService {
         cancelledOrders: 0
       };
     } catch (error) {
-      console.error('[OrderService] Error obteniendo estadísticas:', error);
       throw error;
     }
   }

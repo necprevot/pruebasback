@@ -194,8 +194,6 @@ orderSchema.statics.generateOrderNumber = async function() {
         const year = date.getFullYear().toString().slice(-2);
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
         
-        console.log('🔍 [Order] Buscando última orden con prefijo:', `${prefix}${year}${month}`);
-        
         const lastOrder = await this.findOne({
             orderNumber: new RegExp(`^${prefix}${year}${month}`)
         }).sort({ orderNumber: -1 });
@@ -204,18 +202,13 @@ orderSchema.statics.generateOrderNumber = async function() {
         if (lastOrder) {
             const lastSequence = parseInt(lastOrder.orderNumber.slice(-4));
             sequence = lastSequence + 1;
-            console.log('📊 [Order] Última secuencia encontrada:', lastSequence);
-        }
+            }
         
         const orderNumber = `${prefix}${year}${month}${sequence.toString().padStart(4, '0')}`;
-        console.log('✅ [Order] Número generado:', orderNumber);
-        
         return orderNumber;
     } catch (error) {
-        console.error('❌ [Order] Error en generateOrderNumber:', error);
         // Si hay error, generar un número único con timestamp
         const fallback = `ORD${Date.now()}${Math.floor(Math.random() * 1000)}`;
-        console.log('⚠️ [Order] Usando número de fallback:', fallback);
         return fallback;
     }
 };
@@ -308,11 +301,8 @@ orderSchema.pre('validate', async function(next) {
     // Solo generar orderNumber si es un documento nuevo y no tiene orderNumber
     if (this.isNew && !this.orderNumber) {
         try {
-            console.log('🔢 [Order] Generando número de orden...');
             this.orderNumber = await this.constructor.generateOrderNumber();
-            console.log('✅ [Order] Número de orden generado:', this.orderNumber);
-        } catch (error) {
-            console.error('❌ [Order] Error generando orderNumber:', error);
+            } catch (error) {
             return next(error);
         }
     }
@@ -322,7 +312,6 @@ orderSchema.pre('validate', async function(next) {
 // Middleware pre-save para calcular totales (después de la validación)
 orderSchema.pre('save', function(next) {
     if (this.isModified('items') || this.isModified('discount') || this.isNew) {
-        console.log('💰 [Order] Calculando totales...');
         this.calculateTotals();
     }
     next();

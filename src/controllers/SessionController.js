@@ -38,8 +38,6 @@ class SessionController {
             });
 
         } catch (error) {
-            console.error('[SessionController] Error en login:', error.message);
-
             // Manejo de errores de autenticación
             res.status(401).json({
                 status: 'error',
@@ -56,7 +54,6 @@ class SessionController {
                 message: 'Logout exitoso - Por favor elimina el token del cliente'
             });
         } catch (error) {
-            console.error('[SessionController] Error en logout:', error.message);
             res.status(500).json({
                 status: 'error',
                 message: error.message
@@ -81,7 +78,6 @@ class SessionController {
             });
 
         } catch (error) {
-            console.error('[SessionController] Error en /current:', error.message);
             res.status(500).json({
                 status: 'error',
                 message: 'Error interno del servidor'
@@ -121,8 +117,6 @@ class SessionController {
             });
 
         } catch (error) {
-            console.error('[SessionController] Error en request password reset:', error.message);
-
             // Por seguridad, devolver siempre el mismo mensaje
             res.json({
                 status: 'success',
@@ -174,9 +168,6 @@ class SessionController {
             });
 
         } catch (error) {
-            console.error('[SessionController] Error en reset password:', error.message);
-            console.error('[SessionController] Stack trace:', error.stack);
-
             // Manejo específico de errores
             if (error.message.includes('igual a la contraseña actual') ||
                 error.message.includes('no puede ser igual')) {
@@ -222,7 +213,6 @@ class SessionController {
                     messageId: result.messageId
                 });
             } else {
-                console.error('[SessionController] Error enviando email de prueba');
                 res.status(500).json({
                     status: 'error',
                     message: 'Error enviando email de prueba: ' + result.error
@@ -230,7 +220,6 @@ class SessionController {
             }
 
         } catch (error) {
-            console.error('[SessionController] Error en test email:', error.message);
             res.status(500).json({
                 status: 'error',
                 message: error.message

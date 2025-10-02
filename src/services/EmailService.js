@@ -23,8 +23,7 @@ class EmailService {
             });
             
         } catch (error) {
-            console.error(' [EmailService] Error:', error.message);
-        }
+            }
     }
 
     async verifyConnection() {
@@ -36,7 +35,6 @@ class EmailService {
             await this.transporter.verify();
             return true;
         } catch (error) {
-            console.error(' [EmailService] Error verificando:', error.message);
             return false;
         }
     }
@@ -68,7 +66,6 @@ class EmailService {
             };
 
         } catch (error) {
-            console.error('[EmailService] Error enviando bienvenida:', error.message);
             return {
                 success: false,
                 message: 'Error: ' + error.message
@@ -100,7 +97,6 @@ class EmailService {
             };
 
         } catch (error) {
-            console.error('[EmailService] Error enviando email de reset:', error.message);
             return {
                 success: false,
                 message: 'Error: ' + error.message
@@ -134,7 +130,6 @@ class EmailService {
             };
 
         } catch (error) {
-            console.error('[EmailService] Error enviando confirmación:', error.message);
             return {
                 success: false,
                 message: error.message
@@ -164,7 +159,6 @@ class EmailService {
             };
 
         } catch (error) {
-            console.error('[EmailService] Error enviando notificación:', error.message);
             return {
                 success: false,
                 message: error.message
@@ -193,7 +187,6 @@ class EmailService {
             };
 
         } catch (error) {
-            console.error('[EmailService] Error enviando notificación:', error.message);
             return {
                 success: false,
                 message: error.message
@@ -223,7 +216,6 @@ class EmailService {
             };
 
         } catch (error) {
-            console.error('[EmailService] Error enviando notificación:', error.message);
             return {
                 success: false,
                 message: error.message
@@ -253,7 +245,6 @@ class EmailService {
             };
 
         } catch (error) {
-            console.error('[EmailService] Error enviando confirmación:', error.message);
             return {
                 success: false,
                 message: error.message
@@ -696,7 +687,6 @@ class EmailService {
             };
             
         } catch (error) {
-            console.error('[EmailService] Error verificando configuración:', error.message);
             return {
                 success: false,
                 message: 'Error verificando configuración: ' + error.message

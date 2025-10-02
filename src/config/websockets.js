@@ -45,7 +45,6 @@ export const configureWebSockets = (io) => {
             
             next();
         } catch (error) {
-            console.error('❌ [WebSocket] Error en autenticación:', error.message);
             // Permitir conexión como invitado en caso de error
             socket.user = null;
             socket.isGuest = true;
@@ -104,7 +103,6 @@ export const configureWebSockets = (io) => {
                 });
                 
             } catch (error) {
-                console.error('❌ [WebSocket] Error agregando producto:', error.message);
                 socket.emit('productAdded', { 
                     success: false, 
                     message: error.message 
@@ -137,7 +135,6 @@ export const configureWebSockets = (io) => {
                 });
                 
             } catch (error) {
-                console.error(' [WebSocket] Error actualizando producto:', error.message);
                 socket.emit('productUpdated', { 
                     success: false, 
                     message: error.message 
@@ -169,7 +166,6 @@ export const configureWebSockets = (io) => {
                 });
                 
             } catch (error) {
-                console.error(' [WebSocket] Error eliminando producto:', error.message);
                 socket.emit('error', { 
                     message: error.message 
                 });
@@ -186,7 +182,6 @@ export const configureWebSockets = (io) => {
                 socket.emit('updateProducts', result.payload);
                 
             } catch (error) {
-                console.error(' [WebSocket] Error obteniendo productos:', error.message);
                 socket.emit('error', { message: 'Error al cargar productos' });
             }
         });

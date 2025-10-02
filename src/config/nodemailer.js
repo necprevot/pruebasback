@@ -31,7 +31,6 @@ const createGmailTransporter = () => {
     const pass = process.env.EMAIL_APP_PASSWORD;
     
     if (!user || !pass) {
-        console.error('❌ [Nodemailer] Faltan credenciales de Gmail');
         return null;
     }
     
@@ -56,7 +55,6 @@ const createMailtrapTransporter = () => {
     const pass = process.env.MAILTRAP_PASS;
     
     if (!user || !pass) {
-        console.error(' [Nodemailer] Faltan credenciales de Mailtrap');
         return null;
     }
     
@@ -76,7 +74,6 @@ const createSendgridTransporter = () => {
     const apiKey = process.env.SENDGRID_API_KEY;
     
     if (!apiKey) {
-        console.error(' [Nodemailer] Falta SENDGRID_API_KEY');
         return null;
     }
     
@@ -92,7 +89,6 @@ const createSendgridTransporter = () => {
 // Función para verificar la configuración
 const verifyTransporter = async (transporter) => {
     if (!transporter) {
-        console.error(' [Nodemailer] No se pudo crear el transporter');
         return false;
     }
     
@@ -100,7 +96,6 @@ const verifyTransporter = async (transporter) => {
         await transporter.verify();
         return true;
     } catch (error) {
-        console.error(' [Nodemailer] Error en configuración:', error.message);
         return false;
     }
 };
@@ -125,7 +120,6 @@ const sendEmail = async (options) => {
         const result = await transporter.sendMail(mailOptions);
         return result;
     } catch (error) {
-        console.error(' [Nodemailer] Error enviando email:', error.message);
         throw error;
     }
 };

@@ -20,7 +20,6 @@ class UserRepository extends BaseRepository {
             // Retornar DTO sin información sensible
             return UserDTO.fromUser(user);
         } catch (error) {
-            console.error(' [UserRepository] Error creando usuario:', error.message);
             throw error;
         }
     }
@@ -34,7 +33,6 @@ class UserRepository extends BaseRepository {
             // Para login necesitamos el password
             return await this.dao.findByEmailWithPassword(email);
         } catch (error) {
-            console.error(' [UserRepository] Error buscando usuario:', error.message);
             throw error;
         }
     }
@@ -52,7 +50,6 @@ class UserRepository extends BaseRepository {
             // Retornar DTO sin información sensible
             return UserDTO.fromUser(user);
         } catch (error) {
-            console.error(' [UserRepository] Error buscando usuario:', error.message);
             throw error;
         }
     }
@@ -68,7 +65,6 @@ class UserRepository extends BaseRepository {
             
             return CurrentUserDTO.fromUser(user);
         } catch (error) {
-            console.error(' [UserRepository] Error obteniendo usuario actual:', error.message);
             throw error;
         }
     }
@@ -84,7 +80,6 @@ class UserRepository extends BaseRepository {
             // Ya viene sin password del DAO
             return user;
         } catch (error) {
-            console.error(' [UserRepository] Error buscando usuario para JWT:', error.message);
             throw error;
         }
     }
@@ -99,7 +94,6 @@ class UserRepository extends BaseRepository {
             // Retornar DTO sin información sensible
             return UserDTO.fromUser(user);
         } catch (error) {
-            console.error(' [UserRepository] Error actualizando usuario:', error.message);
             throw error;
         }
     }
@@ -111,7 +105,6 @@ class UserRepository extends BaseRepository {
         try {
             return await this.dao.existsById(userId);
         } catch (error) {
-            console.error(' [UserRepository] Error verificando existencia:', error.message);
             return false;
         }
     }
@@ -124,7 +117,6 @@ class UserRepository extends BaseRepository {
             
             return await this.dao.updateLastLogin(userId);
         } catch (error) {
-            console.error(' [UserRepository] Error actualizando último login:', error.message);
             throw error;
         }
     }
@@ -140,7 +132,6 @@ class UserRepository extends BaseRepository {
             // Retornar array de DTOs sin información sensible
             return UserDTO.fromUsers(users);
         } catch (error) {
-            console.error(' [UserRepository] Error buscando por rol:', error.message);
             throw error;
         }
     }

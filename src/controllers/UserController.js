@@ -42,8 +42,6 @@ class UserController {
             });
 
         } catch (error) {
-            console.error(' [UserController] Error en registro:', error.message);
-            
             // Manejo específico de errores para la evaluación
             if (error.message.includes('ya está registrado')) {
                 return res.status(409).json({
@@ -80,7 +78,6 @@ class UserController {
             });
 
         } catch (error) {
-            console.error('[UserController] Error obteniendo usuario:', error.message);
             res.status(404).json({
                 status: 'error',
                 message: error.message

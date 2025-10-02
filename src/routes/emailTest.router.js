@@ -27,7 +27,6 @@ router.get('/status', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('[EmailTest] Error obteniendo estado:', error.message);
         res.status(500).json({
             status: 'error',
             message: 'Error obteniendo estado del servicio: ' + error.message
@@ -52,7 +51,6 @@ router.get('/test', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('[EmailTest] Error en prueba:', error.message);
         res.status(500).json({
             status: 'error',
             message: 'Error probando configuración: ' + error.message
@@ -91,7 +89,6 @@ router.post('/send-test', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('[EmailTest] Error enviando email de prueba:', error.message);
         res.status(500).json({
             status: 'error',
             message: 'Error enviando email de prueba: ' + error.message

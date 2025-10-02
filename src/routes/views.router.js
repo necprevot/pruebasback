@@ -2,6 +2,7 @@ import { Router } from 'express';
 import ProductManager from '../managers/ProductManager.js';
 import CartManager from '../managers/CartManager.js';
 import { authenticateView, authorizeView } from '../middleware/auth.js';
+import OrderService from '../services/OrderService.js';
 
 const router = Router();
 const productManager = new ProductManager();
@@ -89,7 +90,6 @@ router.get('/products', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error en ruta /products:', error);
         res.render('home', {
             title: 'Catálogo de Productos',
             products: [],
@@ -133,7 +133,6 @@ router.get('/realtimeproducts',
                 user: req.user
             });
         } catch (error) {
-            console.error('Error en ruta realtimeproducts:', error);
             res.render('realTimeProducts', {
                 title: '🔧 Panel de Administración - Productos en Tiempo Real',
                 products: [],
@@ -199,7 +198,6 @@ router.get('/category/:category', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error en categoría:', error);
         res.render('category', {
             title: 'Error en Categoría',
             category: req.params.category,
@@ -214,9 +212,7 @@ router.get('/carts/:cid', async (req, res) => {
     try {
         const { cid } = req.params;
         
-        // 🔧 VALIDAR QUE cid SEA UN STRING VÁLIDO
         if (!cid || typeof cid !== 'string' || cid === '[object Object]') {
-            console.error('❌ [ViewsRouter] ID de carrito inválido:', cid);
             return res.status(400).render('error', {
                 title: 'Error en Carrito',
                 status: 400,
@@ -225,12 +221,10 @@ router.get('/carts/:cid', async (req, res) => {
             });
         }
         
-        console.log('📦 [ViewsRouter] Obteniendo carrito:', cid);
-        
         const cart = await cartManager.getCartById(cid);
         const total = await cartManager.getCartTotal(cid);
 
-        // 🔧 CONVERTIR A OBJETO PLANO
+        // CONVERTIR A OBJETO PLANO
         const cartPlain = cart.toObject ? cart.toObject() : cart;
 
         const totalItems = cartPlain.products ?
@@ -245,7 +239,6 @@ router.get('/carts/:cid', async (req, res) => {
             hasProducts: cartPlain.products && cartPlain.products.length > 0
         });
     } catch (error) {
-        console.error('❌ [ViewsRouter] Error en ruta cart:', error);
         res.render('cart', {
             title: 'Carrito',
             cart: { products: [] },
@@ -278,7 +271,6 @@ router.get('/admin', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error en panel admin:', error);
         res.render('admin', {
             title: 'Panel de Administración',
             error: error.message
@@ -335,8 +327,6 @@ router.get('/products/:pid', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error obteniendo producto:', error);
-
         let status = 500;
         let title = 'Error del servidor';
         let message = error.message;
@@ -372,7 +362,6 @@ router.get('/login', (req, res) => {
             isDevelopment: process.env.NODE_ENV === 'development'
         });
     } catch (error) {
-        console.error('Error en ruta login:', error);
         res.render('login', {
             title: 'Iniciar Sesión',
             error: 'Error al cargar la página de login',
@@ -388,7 +377,6 @@ router.get('/register', (req, res) => {
             isDevelopment: process.env.NODE_ENV === 'development'
         });
     } catch (error) {
-        console.error('Error en ruta register:', error);
         res.render('register', {
             title: 'Crear Cuenta',
             error: 'Error al cargar la página de registro',
@@ -404,7 +392,6 @@ router.get('/forgot-password', (req, res) => {
             isDevelopment: process.env.NODE_ENV === 'development'
         });
     } catch (error) {
-        console.error('Error en ruta forgot-password:', error);
         res.render('forgotPassword', {
             title: 'Recuperar Contraseña',
             error: 'Error al cargar la página',
@@ -427,7 +414,6 @@ router.get('/reset-password/:token', (req, res) => {
             isDevelopment: process.env.NODE_ENV === 'development'
         });
     } catch (error) {
-        console.error('Error en ruta reset-password:', error);
         res.render('resetPassword', {
             title: 'Nueva Contraseña',
             token: req.params.token || '',
@@ -448,7 +434,6 @@ router.get('/profile', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error en ruta profile:', error);
         res.redirect('/login');
     }
 });
@@ -456,5 +441,61 @@ router.get('/profile', async (req, res) => {
 router.get('/logout', (req, res) => {
     res.redirect('/login?message=logged_out');
 });
+
+// ========================================
+// RUTA PROTEGIDA: Panel de Órdenes Admin
+// ========================================
+
+const orderService = new (await import('../services/OrderService.js')).default();
+
+router.get('/adminOrders',
+    authenticateView,
+    authorizeView('admin'),
+    async (req, res) => {
+        try {
+            const { page = 1, status, paymentStatus } = req.query;
+            
+            // Construir filtros
+            const filters = {};
+            if (status) filters.status = status;
+            if (paymentStatus) filters.paymentStatus = paymentStatus;
+            
+            // Obtener órdenes directamente del servicio
+            const ordersResult = await orderService.getAllOrders(
+                filters,
+                parseInt(page),
+                10
+            );
+            
+            // Obtener estadísticas
+            const stats = await orderService.getOrderStats();
+            
+            res.render('adminOrders', {
+                title: 'Panel de Órdenes - Admin',
+                orders: ordersResult.orders || [],
+                pagination: ordersResult.pagination || { page: 1, totalPages: 1 },
+                stats: stats || {},
+                filters: {
+                    status: status || '',
+                    paymentStatus: paymentStatus || ''
+                },
+                user: req.user
+            });
+            
+        } catch (error) {
+            res.render('adminOrders', {
+                title: 'Panel de Órdenes - Admin',
+                orders: [],
+                pagination: { page: 1, totalPages: 1 },
+                stats: {},
+                filters: {},
+                error: 'Error al cargar órdenes: ' + error.message,
+                user: req.user
+            });
+        }
+    }
+);
+
+
 
 export default router;

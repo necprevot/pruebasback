@@ -14,7 +14,6 @@ class BaseRepository {
         try {
             return await this.dao.create(data);
         } catch (error) {
-            console.error(`[${this.constructor.name}] Error en create:`, error.message);
             throw error;
         }
     }
@@ -26,7 +25,6 @@ class BaseRepository {
         try {
             return await this.dao.findById(id, populate);
         } catch (error) {
-            console.error(`[${this.constructor.name}] Error en findById:`, error.message);
             throw error;
         }
     }
@@ -38,7 +36,6 @@ class BaseRepository {
         try {
             return await this.dao.findOne(criteria, populate);
         } catch (error) {
-            console.error(`[${this.constructor.name}] Error en findOne:`, error.message);
             throw error;
         }
     }
@@ -50,7 +47,6 @@ class BaseRepository {
         try {
             return await this.dao.findBy(criteria, options);
         } catch (error) {
-            console.error(`[${this.constructor.name}] Error en find:`, error.message);
             throw error;
         }
     }
@@ -62,7 +58,6 @@ class BaseRepository {
         try {
             return await this.dao.updateById(id, updateData);
         } catch (error) {
-            console.error(`[${this.constructor.name}] Error en updateById:`, error.message);
             throw error;
         }
     }
@@ -74,7 +69,6 @@ class BaseRepository {
         try {
             return await this.dao.deleteById(id);
         } catch (error) {
-            console.error(`[${this.constructor.name}] Error en deleteById:`, error.message);
             throw error;
         }
     }
@@ -86,7 +80,6 @@ class BaseRepository {
         try {
             return await this.dao.count(criteria);
         } catch (error) {
-            console.error(`[${this.constructor.name}] Error en count:`, error.message);
             throw error;
         }
     }
@@ -98,7 +91,6 @@ class BaseRepository {
         try {
             return await this.dao.exists(criteria);
         } catch (error) {
-            console.error(`[${this.constructor.name}] Error en exists:`, error.message);
             throw error;
         }
     }

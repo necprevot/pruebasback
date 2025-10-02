@@ -30,7 +30,6 @@ export const initializePassport = () => {
             
             return done(null, user);
         } catch (err) {
-            console.error('❌ [Passport-JWT] Error en estrategia:', err.message);
             return done(err, false);
         }
     }));
@@ -55,7 +54,6 @@ export const initializePassport = () => {
             // Retornar CurrentUserDTO que NO contiene información sensible
             return done(null, userDTO);
         } catch (err) {
-            console.error('❌ [Passport-Current] Error en estrategia current:', err.message);
             return done(err, false);
         }
     }));

@@ -13,7 +13,6 @@ class ProductRepository {
         try {
             return await this.productManager.getProducts(options);
         } catch (error) {
-            console.error(' [ProductRepository] Error obteniendo productos:', error.message);
             throw error;
         }
     }
@@ -25,7 +24,6 @@ class ProductRepository {
         try {
             return await this.productManager.getProductById(productId);
         } catch (error) {
-            console.error('[ProductRepository] Error obteniendo producto:', error.message);
             throw error;
         }
     }
@@ -37,7 +35,6 @@ class ProductRepository {
         try {
             return await this.productManager.addProduct(productData);
         } catch (error) {
-            console.error('[ProductRepository] Error creando producto:', error.message);
             throw error;
         }
     }
@@ -49,7 +46,6 @@ class ProductRepository {
         try {
             return await this.productManager.updateProductById(productId, updateData);
         } catch (error) {
-            console.error('[ProductRepository] Error actualizando producto:', error.message);
             throw error;
         }
     }
@@ -61,7 +57,6 @@ class ProductRepository {
         try {
             return await this.productManager.deleteProductById(productId);
         } catch (error) {
-            console.error('[ProductRepository] Error eliminando producto:', error.message);
             throw error;
         }
     }
@@ -73,7 +68,6 @@ class ProductRepository {
         try {
             return await this.productManager.searchProducts(searchTerm, options);
         } catch (error) {
-            console.error('[ProductRepository] Error en búsqueda:', error.message);
             throw error;
         }
     }
@@ -85,7 +79,6 @@ class ProductRepository {
         try {
             return await this.productManager.getCategories();
         } catch (error) {
-            console.error('[ProductRepository] Error obteniendo categorías:', error.message);
             throw error;
         }
     }
@@ -97,7 +90,6 @@ class ProductRepository {
         try {
             return await this.productManager.getRelatedProducts(productId, limit);
         } catch (error) {
-            console.error('[ProductRepository] Error obteniendo relacionados:', error.message);
             throw error;
         }
     }
@@ -109,7 +101,6 @@ class ProductRepository {
         try {
             return await this.productManager.getProductStats();
         } catch (error) {
-            console.error('[ProductRepository] Error obteniendo estadísticas:', error.message);
             throw error;
         }
     }
@@ -128,7 +119,6 @@ class ProductRepository {
                 product: product
             };
         } catch (error) {
-            console.error(' [ProductRepository] Error verificando stock:', error.message);
             throw error;
         }
     }
@@ -149,7 +139,6 @@ class ProductRepository {
             
             return results;
         } catch (error) {
-            console.error('[ProductRepository] Error actualizando stock:', error.message);
             throw error;
         }
     }

@@ -120,25 +120,20 @@
 {{/if}}
 
 <script>
-// 🔧 Asegurarse de que cartId sea un string válido
+// Asegurarse de que cartId sea un string válido
 let cartId = '{{cartId}}'.trim();
-console.log('🛒 [Cart] ID del carrito recibido:', cartId);
-console.log('🛒 [Cart] Tipo de cartId:', typeof cartId);
 
 // Verificar que el cartId sea válido
 if (!cartId || cartId === '[object Object]' || cartId === 'undefined' || cartId === 'null') {
-    console.error('❌ [Cart] ID de carrito inválido:', cartId);
+    console.error(' [Cart] ID de carrito inválido:', cartId);
     
     // Intentar obtener del localStorage
     const storedCartId = localStorage.getItem('bbfermentos_cart_id');
-    console.log('🔍 [Cart] Intentando obtener del localStorage:', storedCartId);
     
     if (storedCartId && storedCartId !== '[object Object]' && storedCartId !== 'undefined') {
-        console.log('✅ [Cart] Redirigiendo al carrito almacenado:', storedCartId);
         window.location.href = `/carts/${storedCartId}`;
     } else {
-        console.error('❌ [Cart] No hay carrito válido almacenado');
-        alert('Error: No se pudo cargar el carrito. Redirigiendo al catálogo...');
+        console.error(' [Cart] No hay carrito válido almacenado');
         window.location.href = '/products';
     }
     
@@ -597,9 +592,8 @@ async function handleCheckoutSubmit(e) {
             return;
         }
         
-        // 🔧 VERIFICAR QUE EL CARRITO TENGA PRODUCTOS ANTES DE ENVIAR
-        console.log('🔍 [Checkout] Verificando carrito antes de crear orden...');
-        console.log('📦 [Checkout] ID del carrito:', cartId);
+        // VERIFICAR QUE EL CARRITO TENGA PRODUCTOS ANTES DE ENVIAR
+
         
         try {
             const cartCheckResponse = await fetch(`/api/carts/${cartId}`, {
@@ -612,7 +606,6 @@ async function handleCheckoutSubmit(e) {
                 const cartCheckData = await cartCheckResponse.json();
                 const productsInCart = cartCheckData.cart.products || [];
                 
-                console.log(`📊 [Checkout] Productos en carrito: ${productsInCart.length}`);
                 
                 if (productsInCart.length === 0) {
                     showCheckoutAlert('❌ El carrito está vacío. Agrega productos antes de continuar.', 'error');
@@ -635,7 +628,7 @@ async function handleCheckoutSubmit(e) {
                 }
             }
         } catch (checkError) {
-            console.error('❌ [Checkout] Error verificando carrito:', checkError);
+            console.error(' [Checkout] Error verificando carrito:', checkError);
             showCheckoutAlert('Error verificando el carrito. Intenta de nuevo.', 'error');
             confirmBtn.disabled = false;
             btnText.style.display = 'inline';
@@ -643,7 +636,6 @@ async function handleCheckoutSubmit(e) {
             return;
         }
         
-        console.log('📦 [Checkout] Enviando orden al servidor...');
         
         const response = await fetch('/api/orders', {
             method: 'POST',
@@ -661,7 +653,6 @@ async function handleCheckoutSubmit(e) {
         const data = await response.json();
         
         if (response.ok && data.status === 'success') {
-            console.log('✅ [Checkout] Orden creada exitosamente:', data.payload);
             
             closeCheckoutModal();
             

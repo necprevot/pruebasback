@@ -182,8 +182,6 @@ const Auth = {
       const { response, data } = await API.post(AUTH.ENDPOINTS.LOGIN, { email, password });
       
       if (response.ok && data.status === 'success') {
-        console.log('✅ Login exitoso:', data.payload);
-        
         Storage.saveAuth(data.payload.token, data.payload.user);
         
         // Sincronizar carrito
@@ -200,7 +198,6 @@ const Auth = {
         UI.showAlert(data.message || 'Credenciales inválidas', 'error');
       }
     } catch (error) {
-      console.error('❌ Error en login:', error);
       UI.showAlert('Error de conexión', 'error');
     } finally {
       UI.setButtonLoading('loginBtn', false);
@@ -209,9 +206,6 @@ const Auth = {
   
   async syncUserCart(user) {
     try {
-      console.log('🔄 [Auth] Sincronizando carrito del usuario...');
-      console.log('👤 [Auth] Usuario recibido:', user);
-      
       const localCartId = localStorage.getItem('bbfermentos_cart_id');
       
       let userCartId = null;
@@ -224,24 +218,16 @@ const Auth = {
         }
       }
       
-      console.log('📦 [Auth] Carrito local:', localCartId);
-      console.log('👤 [Auth] Carrito del usuario:', userCartId);
-      
       if (!userCartId) {
-        console.warn('⚠️ [Auth] Usuario no tiene carrito asignado');
         return;
       }
       
       if (localCartId && localCartId !== userCartId) {
-        console.log('🔀 [Auth] Detectado carrito diferente, migrando productos...');
-        
         try {
           const localCartResponse = await fetch(`/api/carts/${localCartId}`);
           if (localCartResponse.ok) {
             const localCartData = await localCartResponse.json();
             const localProducts = localCartData.cart.products || [];
-            
-            console.log(`📦 [Auth] Carrito local tiene ${localProducts.length} productos`);
             
             if (localProducts.length > 0) {
               const token = localStorage.getItem('bbfermentos_auth_token');
@@ -249,8 +235,6 @@ const Auth = {
               for (const item of localProducts) {
                 const productId = item.product._id || item.product;
                 const quantity = item.quantity;
-                
-                console.log(`➕ [Auth] Migrando ${quantity}x producto ${productId}`);
                 
                 for (let i = 0; i < quantity; i++) {
                   await fetch(`/api/carts/${userCartId}/product/${productId}`, {
@@ -263,22 +247,17 @@ const Auth = {
                 }
               }
               
-              console.log('✅ [Auth] Productos migrados exitosamente');
-            }
+              }
           }
         } catch (migrateError) {
-          console.error('❌ [Auth] Error migrando productos:', migrateError);
-        }
+          }
       }
       
       localStorage.setItem('bbfermentos_cart_id', userCartId);
       localStorage.setItem('bbfermentos_cart_timestamp', Date.now().toString());
       
-      console.log('✅ [Auth] Carrito sincronizado:', userCartId);
-      
-    } catch (error) {
-      console.error('❌ [Auth] Error sincronizando carrito:', error);
-    }
+      } catch (error) {
+      }
   },
   
   async register(userData) {

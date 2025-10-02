@@ -57,27 +57,22 @@ class UserService {
                 if (emailResult.success) {
 
                 } else {
-                    console.error('[UserService] Error enviando email:', emailResult.message);
-                }
+                    }
 
             } catch (emailError) {
-                console.error('[UserService] Error en envío de email:', emailError.message);
-            }
+                }
 
             return {
                 status: 'success',
                 user: userDTO
             };
         } catch (error) {
-            console.error('[UserService] Error en registro:', error.message);
             throw error;
         }
     }
 
 async loginUser(email, password) {
     try {
-        console.log('🔐 [UserService] Intentando login para:', email);
-        
         const user = await this.userRepository.findByEmailWithPassword(email);
         
         if (!user) {
@@ -90,8 +85,6 @@ async loginUser(email, password) {
             throw new Error('Credenciales inválidas');
         }
     
-        console.log('✅ [UserService] Credenciales válidas para:', user.email);
-        
         // 🔧 CONVERTIR CART A STRING SI ES UN OBJETO
         let cartId = null;
         if (user.cart) {
@@ -101,8 +94,6 @@ async loginUser(email, password) {
                 cartId = user.cart.toString();
             }
         }
-        
-        console.log('📦 [UserService] Cart del usuario:', cartId);
         
         const tokenPayload = {
             id: user._id.toString(),
@@ -119,13 +110,10 @@ async loginUser(email, password) {
             { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
         );
         
-        console.log('🎟️ [UserService] Token generado con cart:', cartId);
-        
         try {
             await this.userRepository.updateLastLogin(user._id);
         } catch (updateError) {
-            console.log('⚠️ [UserService] No se pudo actualizar último login');
-        }
+            }
         
         // 🔧 PREPARAR RESPUESTA CON CART COMO STRING
         const { password: _, ...userObj } = user.toObject();
@@ -135,15 +123,12 @@ async loginUser(email, password) {
             cart: cartId // 🔧 ASEGURAR QUE CART SEA STRING
         };
         
-        console.log('✅ [UserService] Login exitoso, retornando usuario con cart:', userResponse.cart);
-        
         return {
             status: 'success',
             token: token,
             user: userResponse
         };
     } catch (error) {
-        console.error('❌ [UserService] Error en login:', error.message);
         throw error;
     }
 }
@@ -159,7 +144,6 @@ async loginUser(email, password) {
                 user: userDTO // Ya es CurrentUserDTO sin información sensible
             };
         } catch (error) {
-            console.error('[UserService] Error obteniendo usuario actual:', error.message);
             throw error;
         }
     }
@@ -168,7 +152,6 @@ async loginUser(email, password) {
         try {
             return await this.userRepository.existsById(userId);
         } catch (error) {
-            console.error('[UserService] Error validando usuario:', error.message);
             return false;
         }
     }
@@ -207,7 +190,6 @@ async loginUser(email, password) {
 
             if (emailResult.success) {
             } else {
-                console.error('[UserService] Error enviando email de reset:', emailResult.message);
                 throw new Error('Error enviando email de recuperación');
             }
 
@@ -220,7 +202,6 @@ async loginUser(email, password) {
             };
 
         } catch (error) {
-            console.error(' [UserService] Error en request password reset:', error.message);
             throw error;
         }
     }
@@ -274,7 +255,6 @@ async loginUser(email, password) {
             };
 
         } catch (error) {
-            console.error('[UserService] Error en reset password:', error.message);
             throw error;
         }
     }
@@ -305,7 +285,6 @@ async loginUser(email, password) {
             return emailResult;
 
         } catch (error) {
-            console.error('[UserService] Error reenviando email:', error.message);
             return {
                 success: false,
                 message: 'Error reenviando email: ' + error.message
@@ -324,7 +303,6 @@ async loginUser(email, password) {
             };
 
         } catch (error) {
-            console.error('[UserService] Error verificando email:', error.message);
             return {
                 success: false,
                 message: 'Error verificando configuración: ' + error.message

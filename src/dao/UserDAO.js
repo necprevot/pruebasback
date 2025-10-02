@@ -31,7 +31,6 @@ class UserDAO extends BaseDAO {
             
             return userWithoutPassword;
         } catch (error) {
-            console.error(' [UserDAO] Error creando usuario:', error.message);
             throw error;
         }
     }
@@ -46,7 +45,6 @@ class UserDAO extends BaseDAO {
             
             return user;
         } catch (error) {
-            console.error(' [UserDAO] Error buscando por email:', error.message);
             throw error;
         }
     }
@@ -62,7 +60,6 @@ class UserDAO extends BaseDAO {
             
             return user;
         } catch (error) {
-            console.error(' [UserDAO] Error buscando usuario para login:', error.message);
             throw error;
         }
     }
@@ -78,7 +75,6 @@ class UserDAO extends BaseDAO {
             
             return userForJWT;
         } catch (error) {
-            console.error(' [UserDAO] Error buscando usuario para JWT:', error.message);
             throw error;
         }
     }
@@ -92,7 +88,6 @@ class UserDAO extends BaseDAO {
             const user = await this.model.findById(userId).select('_id').lean();
             return !!user;
         } catch (error) {
-            console.error(' [UserDAO] Error verificando existencia de usuario:', error.message);
             return false;
         }
     }
@@ -121,7 +116,6 @@ class UserDAO extends BaseDAO {
             
             return updated;
         } catch (error) {
-            console.error(' [UserDAO] Error actualizando usuario:', error.message);
             throw error;
         }
     }
@@ -136,7 +130,6 @@ class UserDAO extends BaseDAO {
                 lastLogin: new Date() 
             });
         } catch (error) {
-            console.error(' [UserDAO] Error actualizando último login:', error.message);
             throw error;
         }
     }
@@ -157,7 +150,6 @@ class UserDAO extends BaseDAO {
             
             return users;
         } catch (error) {
-            console.error(' [UserDAO] Error buscando por rol:', error.message);
             throw error;
         }
     }

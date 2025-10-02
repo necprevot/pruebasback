@@ -11,7 +11,6 @@ import cookieParser from 'cookie-parser';
 function authenticateJWT(req, res, next) {
   passport.authenticate('jwt', { session: false }, (err, user, info) => {
     if (err) {
-      console.error(' [Auth] Error:', err.message);
       return res.status(500).json({
         status: 'error',
         message: 'Error interno de autenticación'
@@ -125,7 +124,6 @@ export const authenticateView = (req, res, next) => {
     session: false,
   }, (err, user, info) => {
     if (err) {
-      console.error(' [AuthView] Error:', err);
       return res.redirect('/login?error=auth_error');
     }
     

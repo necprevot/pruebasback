@@ -139,12 +139,6 @@ export const asyncHandler = (fn) => {
 // ==========================================
 
 export const errorHandler = (err, req, res, next) => {
-  console.error('💥 [ErrorHandler] Error capturado:', {
-    name: err.name,
-    message: err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
-
   if (err instanceof CustomError) {
     return res.status(err.statusCode).json({
       status: 'error',

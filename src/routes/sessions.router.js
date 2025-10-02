@@ -76,7 +76,6 @@ router.post('/test-email', async (req, res) => {
         }
         
     } catch (error) {
-        console.error('[Route] Error en test-email:', error.message);
         res.status(500).json({
             status: 'error',
             message: 'Error interno del servidor',
@@ -110,7 +109,6 @@ router.get('/email-config', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('[Route] Error verificando configuración:', error.message);
         res.status(500).json({
             status: 'error',
             message: 'Error verificando configuración',
