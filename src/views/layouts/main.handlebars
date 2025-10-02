@@ -15,18 +15,18 @@
                 <nav>
                     <a href="/products">Catálogo</a>
                     
-                    <!-- ✅ LINK SOLO VISIBLE PARA ADMIN -->
+                    <!-- Link solo visible para admin -->
                     <a href="/realtimeproducts" class="auth-link" data-auth-required="true" data-role-required="admin" style="display: none;">
                         🔧 Panel Admin
                     </a>
                     
-                    <a href="#" onclick="goToCart()">🛒 Ver Mi Carrito</a>
+                    <a href="#" onclick="goToCart(); return false;">🛒 Ver Mi Carrito</a>
                     
                     <!-- Enlaces de autenticación -->
                     <a href="/login" class="auth-link" data-auth-required="false">🔑 Iniciar Sesión</a>
                     <a href="/register" class="auth-link" data-auth-required="false">👤 Registro</a>
                     <a href="/profile" class="auth-link" data-auth-required="true" style="display: none;">👤 Mi Perfil</a>
-                    <a href="#" onclick="BBAuth.logout()" class="auth-link" data-auth-required="true" style="display: none;">🚪 Salir</a>
+                    <a href="#" onclick="handleLogout(); return false;" class="auth-link" data-auth-required="true" style="display: none;">🚪 Salir</a>
                 </nav>
             </div>
         </div>
@@ -54,6 +54,27 @@
             }
         }
 
+        // 🔧 FUNCIÓN DE LOGOUT CORREGIDA
+        function handleLogout() {
+            if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+                // Limpiar todo el almacenamiento
+                localStorage.removeItem('bbfermentos_auth_token');
+                localStorage.removeItem('bbfermentos_user_data');
+                localStorage.removeItem('bbfermentos_cart_id');
+                localStorage.removeItem('bbfermentos_cart_timestamp');
+                localStorage.removeItem('bbfermentos_redirect_after_login');
+                
+                // Limpiar cookie
+                document.cookie = 'bbfermentos_auth_token=; path=/; max-age=0';
+                
+                // Mostrar mensaje
+                alert('Sesión cerrada exitosamente');
+                
+                // Redirigir
+                window.location.href = '/login';
+            }
+        }
+
         function updateAuthUI() {
             const userData = getUserData();
             const isAuth = isAuthenticated();
@@ -62,11 +83,10 @@
             const authLinks = document.querySelectorAll('.auth-link');
             authLinks.forEach(link => {
                 const authRequired = link.dataset.authRequired === 'true';
-                const roleRequired = link.dataset.roleRequired; // 'admin', 'premium', etc.
+                const roleRequired = link.dataset.roleRequired;
                 
                 if (authRequired) {
                     if (isAuth) {
-                        // Verificar rol si es necesario
                         if (roleRequired) {
                             if (userData && userData.role === roleRequired) {
                                 link.style.display = 'inline';
@@ -77,7 +97,6 @@
                             link.style.display = 'inline';
                         }
                         
-                        // Actualizar nombre de usuario
                         if (userData && link.textContent.includes('Usuario')) {
                             link.textContent = `👤 ${userData.first_name}`;
                         }
@@ -85,7 +104,6 @@
                         link.style.display = 'none';
                     }
                 } else {
-                    // Links para no autenticados
                     if (isAuth) {
                         link.style.display = 'none';
                     } else {
@@ -95,7 +113,6 @@
             });
         }
 
-        // Helper functions necesarias
         function getUserData() {
             const userData = localStorage.getItem('bbfermentos_user_data');
             return userData ? JSON.parse(userData) : null;
@@ -109,15 +126,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             updateAuthUI();
             
-            // Verificar si hay mensajes en la URL
             const urlParams = new URLSearchParams(window.location.search);
             const message = urlParams.get('message');
             
             if (message === 'logged_out') {
-                if (window.BBAuth && window.BBAuth.showAlert) {
-                    window.BBAuth.showAlert('Sesión cerrada correctamente', 'info');
-                }
-                // Limpiar la URL
+                alert('Sesión cerrada correctamente');
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         });

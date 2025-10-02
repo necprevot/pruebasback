@@ -213,9 +213,24 @@ router.get('/category/:category', async (req, res) => {
 router.get('/carts/:cid', async (req, res) => {
     try {
         const { cid } = req.params;
+        
+        // 🔧 VALIDAR QUE cid SEA UN STRING VÁLIDO
+        if (!cid || typeof cid !== 'string' || cid === '[object Object]') {
+            console.error('❌ [ViewsRouter] ID de carrito inválido:', cid);
+            return res.status(400).render('error', {
+                title: 'Error en Carrito',
+                status: 400,
+                message: 'ID de carrito inválido',
+                backUrl: '/products'
+            });
+        }
+        
+        console.log('📦 [ViewsRouter] Obteniendo carrito:', cid);
+        
         const cart = await cartManager.getCartById(cid);
         const total = await cartManager.getCartTotal(cid);
 
+        // 🔧 CONVERTIR A OBJETO PLANO
         const cartPlain = cart.toObject ? cart.toObject() : cart;
 
         const totalItems = cartPlain.products ?
@@ -224,13 +239,13 @@ router.get('/carts/:cid', async (req, res) => {
         res.render('cart', {
             title: `Carrito ${cid}`,
             cart: cartPlain,
-            cartId: cid,
+            cartId: cid, // 🔧 IMPORTANTE: Pasar el STRING del ID
             total: total,
             totalItems: totalItems,
             hasProducts: cartPlain.products && cartPlain.products.length > 0
         });
     } catch (error) {
-        console.error('Error en ruta cart:', error);
+        console.error('❌ [ViewsRouter] Error en ruta cart:', error);
         res.render('cart', {
             title: 'Carrito',
             cart: { products: [] },

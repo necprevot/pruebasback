@@ -120,42 +120,59 @@
 {{/if}}
 
 <script>
-const cartId = '{{cartId}}';
+// 🔧 Asegurarse de que cartId sea un string válido
+let cartId = '{{cartId}}'.trim();
+console.log('🛒 [Cart] ID del carrito recibido:', cartId);
+console.log('🛒 [Cart] Tipo de cartId:', typeof cartId);
+
+// Verificar que el cartId sea válido
+if (!cartId || cartId === '[object Object]' || cartId === 'undefined' || cartId === 'null') {
+    console.error('❌ [Cart] ID de carrito inválido:', cartId);
+    
+    // Intentar obtener del localStorage
+    const storedCartId = localStorage.getItem('bbfermentos_cart_id');
+    console.log('🔍 [Cart] Intentando obtener del localStorage:', storedCartId);
+    
+    if (storedCartId && storedCartId !== '[object Object]' && storedCartId !== 'undefined') {
+        console.log('✅ [Cart] Redirigiendo al carrito almacenado:', storedCartId);
+        window.location.href = `/carts/${storedCartId}`;
+    } else {
+        console.error('❌ [Cart] No hay carrito válido almacenado');
+        alert('Error: No se pudo cargar el carrito. Redirigiendo al catálogo...');
+        window.location.href = '/products';
+    }
+    
+    // Detener ejecución del resto del script
+    throw new Error('CartId inválido');
+}
 
 // Funciones de cálculo
 function calculateTotals() {
     let totalItems = 0;
     let totalAmount = 0;
     
-    // Obtener todos los productos del carrito
     const productItems = document.querySelectorAll('.cart-product-item');
-
     
-    productItems.forEach((item, index) => {
+    productItems.forEach((item) => {
         const quantityInput = item.querySelector('.quantity-input');
         const price = parseFloat(item.dataset.price);
         
         if (quantityInput && price) {
-
             const quantity = parseInt(quantityInput.value) || 0;
             const subtotal = price * quantity;
-
             
             totalItems += quantity;
             totalAmount += subtotal;
             
-
             const subtotalElement = item.querySelector(`#subtotal-${item.dataset.productId}`);
             if (subtotalElement) {
                 subtotalElement.textContent = Math.round(subtotal);
             }
             
-
             item.dataset.quantity = quantity;
         }
     });
     
-
     const totalItemsElement = document.getElementById('totalItems');
     const calculatedTotalElement = document.getElementById('calculatedTotal');
     
@@ -178,20 +195,18 @@ async function syncWithServer() {
             const data = await response.json();
             const serverCart = data.cart;
             
-
             serverCart.products.forEach(serverItem => {
                 const quantityInput = document.getElementById(`quantity-${serverItem.product._id}`);
                 const clientQuantity = parseInt(quantityInput?.value || 0);
                 
                 if (clientQuantity !== serverItem.quantity) {
-                    
+                    if (quantityInput) {
                         quantityInput.value = serverItem.quantity;
                         quantityInput.defaultValue = serverItem.quantity;
                     }
                 }
             });
             
-
             calculateTotals();
         }
     } catch (error) {
@@ -206,7 +221,6 @@ function handleQuantityInputChange(productId) {
     const newQuantity = parseInt(quantityInput.value);
     const oldQuantity = parseInt(quantityInput.defaultValue || 1);
     
-    // Solo actualizar si realmente cambió
     if (newQuantity !== oldQuantity) {
         updateQuantity(productId, newQuantity);
     }
@@ -214,8 +228,6 @@ function handleQuantityInputChange(productId) {
 
 // Ejecutar cálculo al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
-    
-    // Pequeño delay para asegurar que todo esté renderizado
     setTimeout(() => {
         calculateTotals();
     }, 100);
@@ -229,42 +241,44 @@ async function updateQuantity(productId, newQuantity) {
         if (confirm('¿Quieres eliminar este producto del carrito?')) {
             await removeFromCart(productId);
         } else {
-            // Restaurar valor anterior
             const quantityInput = document.getElementById(`quantity-${productId}`);
             if (quantityInput) {
                 quantityInput.value = quantityInput.defaultValue || 1;
             }
-            calculateTotals(); // Recalcular con valor restaurado
+            calculateTotals();
         }
         return;
     }
     
     try {
+        // Obtener token si existe
+        const token = localStorage.getItem('bbfermentos_auth_token');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
         
         const response = await fetch(`/api/carts/${cartId}/product/${productId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: headers,
             body: JSON.stringify({ quantity: newQuantity })
         });
         
         if (response.ok) {
-            
-            // Actualizar el dataset del elemento inmediatamente
             const productItem = document.querySelector(`[data-product-id="${productId}"]`);
             if (productItem) {
                 productItem.dataset.quantity = newQuantity;
             }
             
-            // Actualizar el input visualmente
             const quantityInput = document.getElementById(`quantity-${productId}`);
             if (quantityInput) {
                 quantityInput.value = newQuantity;
-                quantityInput.defaultValue = newQuantity; // Para restaurar en caso de error
+                quantityInput.defaultValue = newQuantity;
             }
             
-            // Recalcular totales inmediatamente
             calculateTotals();
             showAlert('Cantidad actualizada', 'success');
             
@@ -276,7 +290,6 @@ async function updateQuantity(productId, newQuantity) {
         console.error('Error actualizando cantidad:', error);
         showAlert('Error: ' + error.message, 'danger');
         
-        // Restaurar valor anterior en caso de error
         const quantityInput = document.getElementById(`quantity-${productId}`);
         if (quantityInput) {
             quantityInput.value = quantityInput.defaultValue || 1;
@@ -292,13 +305,20 @@ async function removeFromCart(productId) {
     }
     
     try {
+        const token = localStorage.getItem('bbfermentos_auth_token');
+        const headers = {};
+        
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
         const response = await fetch(`/api/carts/${cartId}/product/${productId}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: headers
         });
         
         if (response.ok) {
             showAlert('Producto eliminado del carrito', 'success');
-            // Recargar página después de un momento
             setTimeout(() => {
                 window.location.reload();
             }, 1000);
@@ -319,8 +339,16 @@ async function clearCart() {
     }
     
     try {
+        const token = localStorage.getItem('bbfermentos_auth_token');
+        const headers = {};
+        
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
         const response = await fetch(`/api/carts/${cartId}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: headers
         });
         
         if (response.ok) {
@@ -346,7 +374,6 @@ async function updateCartDisplay() {
             const data = await response.json();
             const cart = data.cart;
             
-            // Actualizar cantidades en los inputs
             cart.products.forEach(item => {
                 const quantityInput = document.getElementById(`quantity-${item.product._id}`);
                 if (quantityInput) {
@@ -354,7 +381,6 @@ async function updateCartDisplay() {
                 }
             });
             
-            // Recalcular totales después de actualizar
             calculateTotals();
         }
     } catch (error) {
@@ -362,14 +388,11 @@ async function updateCartDisplay() {
     }
 }
 
-// Proceder al checkout
 // ==========================================
-// AGREGAR AL FINAL DE cart.handlebars <script>
-// REEMPLAZAR la función proceedToCheckout existente
+// CHECKOUT - PROCEDER AL PAGO
 // ==========================================
 
-// Proceder al checkout - VERSIÓN COMPLETA
-async function proceedToCheckout() {
+function proceedToCheckout() {
     const totals = calculateTotals();
     
     if (totals.totalItems === 0) {
@@ -381,7 +404,6 @@ async function proceedToCheckout() {
     const token = localStorage.getItem('bbfermentos_auth_token');
     if (!token) {
         showAlert('Debes iniciar sesión para realizar una compra', 'warning');
-        // Guardar URL de retorno
         localStorage.setItem('bbfermentos_redirect_after_login', window.location.href);
         setTimeout(() => {
             window.location.href = '/login';
@@ -389,7 +411,6 @@ async function proceedToCheckout() {
         return;
     }
     
-    // Mostrar modal de checkout
     showCheckoutModal();
 }
 
@@ -404,7 +425,6 @@ function showCheckoutModal() {
                     <button onclick="closeCheckoutModal()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #666;">&times;</button>
                 </div>
 
-                <!-- Resumen del carrito -->
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                     <h4 style="margin: 0 0 10px 0;">📦 Resumen del pedido</h4>
                     <div style="display: flex; justify-content: space-between; margin: 5px 0;">
@@ -417,7 +437,6 @@ function showCheckoutModal() {
                     </div>
                 </div>
 
-                <!-- Formulario de dirección -->
                 <form id="checkoutForm" style="margin-bottom: 20px;">
                     <h4 style="margin: 20px 0 15px 0;">📍 Dirección de Envío</h4>
                     
@@ -519,16 +538,13 @@ function showCheckoutModal() {
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     
-    // Actualizar resumen
     const totals = calculateTotals();
     document.getElementById('checkoutItems').textContent = totals.totalItems + ' productos';
     document.getElementById('checkoutTotal').textContent = Math.round(totals.totalAmount);
     
-    // Manejar envío del formulario
     document.getElementById('checkoutForm').addEventListener('submit', handleCheckoutSubmit);
 }
 
-// Cerrar modal de checkout
 function closeCheckoutModal() {
     const modal = document.getElementById('checkoutModal');
     if (modal) {
@@ -536,7 +552,6 @@ function closeCheckoutModal() {
     }
 }
 
-// Procesar checkout
 async function handleCheckoutSubmit(e) {
     e.preventDefault();
     
@@ -544,7 +559,6 @@ async function handleCheckoutSubmit(e) {
     const btnText = document.getElementById('confirmBtnText');
     const btnSpinner = document.getElementById('confirmBtnSpinner');
     
-    // UI de carga
     confirmBtn.disabled = true;
     btnText.style.display = 'none';
     btnSpinner.style.display = 'inline';
@@ -552,7 +566,6 @@ async function handleCheckoutSubmit(e) {
     try {
         const formData = new FormData(e.target);
         
-        // Construir objeto de dirección
         const shippingAddress = {
             street: formData.get('street'),
             city: formData.get('city'),
@@ -566,7 +579,6 @@ async function handleCheckoutSubmit(e) {
         const paymentMethod = formData.get('paymentMethod');
         const notes = formData.get('notes') || '';
         
-        // Validar método de pago
         if (!paymentMethod) {
             showCheckoutAlert('Debes seleccionar un método de pago', 'warning');
             confirmBtn.disabled = false;
@@ -575,7 +587,6 @@ async function handleCheckoutSubmit(e) {
             return;
         }
         
-        // Obtener token de autenticación
         const token = localStorage.getItem('bbfermentos_auth_token');
         
         if (!token) {
@@ -586,9 +597,54 @@ async function handleCheckoutSubmit(e) {
             return;
         }
         
-        console.log('📦 Enviando orden al servidor...');
+        // 🔧 VERIFICAR QUE EL CARRITO TENGA PRODUCTOS ANTES DE ENVIAR
+        console.log('🔍 [Checkout] Verificando carrito antes de crear orden...');
+        console.log('📦 [Checkout] ID del carrito:', cartId);
         
-        // Crear orden en el servidor
+        try {
+            const cartCheckResponse = await fetch(`/api/carts/${cartId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (cartCheckResponse.ok) {
+                const cartCheckData = await cartCheckResponse.json();
+                const productsInCart = cartCheckData.cart.products || [];
+                
+                console.log(`📊 [Checkout] Productos en carrito: ${productsInCart.length}`);
+                
+                if (productsInCart.length === 0) {
+                    showCheckoutAlert('❌ El carrito está vacío. Agrega productos antes de continuar.', 'error');
+                    confirmBtn.disabled = false;
+                    btnText.style.display = 'inline';
+                    btnSpinner.style.display = 'none';
+                    return;
+                }
+                
+                // Verificar que el carrito coincida con el usuario
+                const userData = JSON.parse(localStorage.getItem('bbfermentos_user_data') || '{}');
+                if (userData.cart && userData.cart !== cartId) {
+                    console.warn('⚠️ [Checkout] Carrito no coincide con el usuario');
+                    showCheckoutAlert('⚠️ Hay un problema con tu carrito. Recargando página...', 'warning');
+                    setTimeout(() => {
+                        localStorage.setItem('bbfermentos_cart_id', userData.cart);
+                        window.location.href = `/carts/${userData.cart}`;
+                    }, 2000);
+                    return;
+                }
+            }
+        } catch (checkError) {
+            console.error('❌ [Checkout] Error verificando carrito:', checkError);
+            showCheckoutAlert('Error verificando el carrito. Intenta de nuevo.', 'error');
+            confirmBtn.disabled = false;
+            btnText.style.display = 'inline';
+            btnSpinner.style.display = 'none';
+            return;
+        }
+        
+        console.log('📦 [Checkout] Enviando orden al servidor...');
+        
         const response = await fetch('/api/orders', {
             method: 'POST',
             headers: {
@@ -605,23 +661,19 @@ async function handleCheckoutSubmit(e) {
         const data = await response.json();
         
         if (response.ok && data.status === 'success') {
-            console.log('✅ Orden creada exitosamente:', data.payload);
+            console.log('✅ [Checkout] Orden creada exitosamente:', data.payload);
             
-            // Cerrar modal
             closeCheckoutModal();
             
-            // Mostrar éxito
             showAlert('✅ ¡Pedido realizado exitosamente! Orden: ' + (data.payload.order?.orderNumber || ''), 'success');
             
-            // Limpiar carrito y recargar después de un momento
             setTimeout(() => {
                 window.location.reload();
             }, 2000);
             
         } else {
-            console.error('❌ Error del servidor:', data);
+            console.error('❌ [Checkout] Error del servidor:', data);
             
-            // Manejo específico de errores
             let errorMessage = data.message || 'Error al procesar el pedido';
             
             if (data.message && data.message.includes('Stock insuficiente')) {
@@ -634,17 +686,15 @@ async function handleCheckoutSubmit(e) {
         }
         
     } catch (error) {
-        console.error('❌ Error en checkout:', error);
+        console.error('❌ [Checkout] Error en checkout:', error);
         showCheckoutAlert('Error de conexión. Por favor intenta de nuevo.', 'error');
     } finally {
-        // Restaurar botón
         confirmBtn.disabled = false;
         btnText.style.display = 'inline';
         btnSpinner.style.display = 'none';
     }
 }
 
-// Mostrar alertas dentro del modal de checkout
 function showCheckoutAlert(message, type) {
     const alertContainer = document.getElementById('checkoutAlerts');
     if (!alertContainer) return;
@@ -673,25 +723,9 @@ function showCheckoutAlert(message, type) {
     }, 5000);
 }
 
-// Cerrar modal al hacer clic fuera
-document.addEventListener('click', function(e) {
-    const modal = document.getElementById('checkoutModal');
-    if (modal && e.target === modal) {
-        closeCheckoutModal();
-    }
-});
-
-// Cerrar modal con tecla Escape
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeCheckoutModal();
-    }
-});
-
 // Guardar para después
 function saveForLater() {
     showAlert('Carrito guardado en tu cuenta', 'success');
-    // Implementar guardar para después
 }
 
 // Mostrar alertas
@@ -708,26 +742,20 @@ function showAlert(message, type) {
     
     alertContainer.innerHTML = alertHtml;
     
-    // Auto-remover después de 5 segundos
     setTimeout(() => {
         const alert = alertContainer.querySelector('.alert');
         if (alert) alert.remove();
     }, 5000);
 }
 
-
-
 function setupQuantityControls() {
-    // Configurar listeners para inputs de cantidad
     document.querySelectorAll('.quantity-input').forEach(input => {
         const productId = input.id.replace('quantity-', '');
         
-        // Al cambiar el valor manualmente
         input.addEventListener('change', () => {
             handleQuantityInputChange(productId);
         });
         
-        // Al presionar Enter
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 handleQuantityInputChange(productId);
@@ -750,29 +778,18 @@ window.updateQuantityByButton = function(productId, delta) {
         return;
     }
     
-    // Actualizar input visualmente primero
     quantityInput.value = newQuantity;
-    
-    // Recalcular totales inmediatamente para feedback visual
     calculateTotals();
-    
-    // Luego sincronizar con servidor
     updateQuantity(productId, newQuantity);
 };
 
-// Inicializar cuando se carga la página
 document.addEventListener('DOMContentLoaded', function() {
-    
-    // Configurar controles de cantidad
     setupQuantityControls();
     
-    // Calcular totales iniciales
     setTimeout(() => {
         calculateTotals();
     }, 100);
     
-
     setInterval(syncWithServer, 30000);
 });
-
 </script>

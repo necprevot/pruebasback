@@ -47,27 +47,31 @@ router.get("/:cid", async (req, res) => {
 });
 
 // ====================================
-// RUTAS PROTEGIDAS - USUARIOS AUTENTICADOS
+// RUTAS CON AUTENTICACIÓN OPCIONAL
 // ====================================
 
 /**
  * POST /api/carts/:cid/product/:pid
- * Solo usuarios autenticados pueden agregar al carrito
+ * Agregar producto al carrito
+ * NOTA: Cambiado a optionalAuth para permitir invitados Y usuarios autenticados
  */
 router.post("/:cid/product/:pid",
-    authenticate,  // Verificar que esté autenticado
+    optionalAuth,  // Autenticación opcional
     async (req, res) => {
         try {
             const { cid, pid } = req.params;
             
-            // Verificar que el usuario sea dueño del carrito
-            const userCartId = req.user.cart?.toString();
-            if (cid !== userCartId && req.user.role !== 'admin') {
-                return res.status(403).json({
-                    status: "error",
-                    message: "No puedes modificar un carrito que no es tuyo"
-                });
+            // Si hay usuario autenticado, verificar que sea su carrito
+            if (req.user) {
+                const userCartId = req.user.cart?.toString();
+                if (cid !== userCartId && req.user.role !== 'admin') {
+                    return res.status(403).json({
+                        status: "error",
+                        message: "No puedes modificar un carrito que no es tuyo"
+                    });
+                }
             }
+            // Si no hay usuario, permitir (invitado)
             
             const updatedCart = await cartManager.addProductToCart(cid, pid);
             
@@ -87,22 +91,24 @@ router.post("/:cid/product/:pid",
 
 /**
  * PUT /api/carts/:cid/product/:pid
- * Solo usuarios autenticados pueden actualizar cantidad
+ * Actualizar cantidad (autenticación opcional)
  */
 router.put("/:cid/product/:pid",
-    authenticate,
+    optionalAuth,
     async (req, res) => {
         try {
             const { cid, pid } = req.params;
             const { quantity } = req.body;
             
-            // Verificar propiedad del carrito
-            const userCartId = req.user.cart?.toString();
-            if (cid !== userCartId && req.user.role !== 'admin') {
-                return res.status(403).json({
-                    status: "error",
-                    message: "No autorizado para modificar este carrito"
-                });
+            // Si hay usuario autenticado, verificar propiedad
+            if (req.user) {
+                const userCartId = req.user.cart?.toString();
+                if (cid !== userCartId && req.user.role !== 'admin') {
+                    return res.status(403).json({
+                        status: "error",
+                        message: "No autorizado para modificar este carrito"
+                    });
+                }
             }
             
             if (!quantity || quantity < 0) {
@@ -132,21 +138,23 @@ router.put("/:cid/product/:pid",
 
 /**
  * DELETE /api/carts/:cid/product/:pid
- * Solo usuarios autenticados pueden eliminar productos
+ * Eliminar producto (autenticación opcional)
  */
 router.delete("/:cid/product/:pid",
-    authenticate,
+    optionalAuth,
     async (req, res) => {
         try {
             const { cid, pid } = req.params;
             
-            // Verificar propiedad
-            const userCartId = req.user.cart?.toString();
-            if (cid !== userCartId && req.user.role !== 'admin') {
-                return res.status(403).json({
-                    status: "error",
-                    message: "No autorizado"
-                });
+            // Si hay usuario autenticado, verificar propiedad
+            if (req.user) {
+                const userCartId = req.user.cart?.toString();
+                if (cid !== userCartId && req.user.role !== 'admin') {
+                    return res.status(403).json({
+                        status: "error",
+                        message: "No autorizado"
+                    });
+                }
             }
             
             const updatedCart = await cartManager.removeProductFromCart(cid, pid);
@@ -167,21 +175,23 @@ router.delete("/:cid/product/:pid",
 
 /**
  * DELETE /api/carts/:cid
- * Solo usuarios autenticados pueden vaciar carrito
+ * Vaciar carrito (autenticación opcional)
  */
 router.delete("/:cid",
-    authenticate,
+    optionalAuth,
     async (req, res) => {
         try {
             const { cid } = req.params;
             
-            // Verificar propiedad
-            const userCartId = req.user.cart?.toString();
-            if (cid !== userCartId && req.user.role !== 'admin') {
-                return res.status(403).json({
-                    status: "error",
-                    message: "No autorizado"
-                });
+            // Si hay usuario autenticado, verificar propiedad
+            if (req.user) {
+                const userCartId = req.user.cart?.toString();
+                if (cid !== userCartId && req.user.role !== 'admin') {
+                    return res.status(403).json({
+                        status: "error",
+                        message: "No autorizado"
+                    });
+                }
             }
             
             const clearedCart = await cartManager.clearCart(cid);

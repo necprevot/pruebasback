@@ -188,22 +188,36 @@ orderSchema.virtual('itemCount').get(function() {
 
 // Método para generar número de orden
 orderSchema.statics.generateOrderNumber = async function() {
-  const prefix = 'ORD';
-  const date = new Date();
-  const year = date.getFullYear().toString().slice(-2);
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  
-  const lastOrder = await this.findOne({
-    orderNumber: new RegExp(`^${prefix}${year}${month}`)
-  }).sort({ orderNumber: -1 });
-  
-  let sequence = 1;
-  if (lastOrder) {
-    const lastSequence = parseInt(lastOrder.orderNumber.slice(-4));
-    sequence = lastSequence + 1;
-  }
-  
-  return `${prefix}${year}${month}${sequence.toString().padStart(4, '0')}`;
+    try {
+        const prefix = 'ORD';
+        const date = new Date();
+        const year = date.getFullYear().toString().slice(-2);
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        
+        console.log('🔍 [Order] Buscando última orden con prefijo:', `${prefix}${year}${month}`);
+        
+        const lastOrder = await this.findOne({
+            orderNumber: new RegExp(`^${prefix}${year}${month}`)
+        }).sort({ orderNumber: -1 });
+        
+        let sequence = 1;
+        if (lastOrder) {
+            const lastSequence = parseInt(lastOrder.orderNumber.slice(-4));
+            sequence = lastSequence + 1;
+            console.log('📊 [Order] Última secuencia encontrada:', lastSequence);
+        }
+        
+        const orderNumber = `${prefix}${year}${month}${sequence.toString().padStart(4, '0')}`;
+        console.log('✅ [Order] Número generado:', orderNumber);
+        
+        return orderNumber;
+    } catch (error) {
+        console.error('❌ [Order] Error en generateOrderNumber:', error);
+        // Si hay error, generar un número único con timestamp
+        const fallback = `ORD${Date.now()}${Math.floor(Math.random() * 1000)}`;
+        console.log('⚠️ [Order] Usando número de fallback:', fallback);
+        return fallback;
+    }
 };
 
 // Método para calcular totales
@@ -290,20 +304,28 @@ orderSchema.methods.confirmPayment = function(transactionId, paymentDetails = nu
   return this;
 };
 
-// Middleware pre-save para generar orderNumber
-orderSchema.pre('save', async function(next) {
-  if (this.isNew && !this.orderNumber) {
-    this.orderNumber = await this.constructor.generateOrderNumber();
-  }
-  next();
+orderSchema.pre('validate', async function(next) {
+    // Solo generar orderNumber si es un documento nuevo y no tiene orderNumber
+    if (this.isNew && !this.orderNumber) {
+        try {
+            console.log('🔢 [Order] Generando número de orden...');
+            this.orderNumber = await this.constructor.generateOrderNumber();
+            console.log('✅ [Order] Número de orden generado:', this.orderNumber);
+        } catch (error) {
+            console.error('❌ [Order] Error generando orderNumber:', error);
+            return next(error);
+        }
+    }
+    next();
 });
 
-// Middleware pre-save para calcular totales
+// Middleware pre-save para calcular totales (después de la validación)
 orderSchema.pre('save', function(next) {
-  if (this.isModified('items') || this.isModified('discount') || this.isNew) {
-    this.calculateTotals();
-  }
-  next();
+    if (this.isModified('items') || this.isModified('discount') || this.isNew) {
+        console.log('💰 [Order] Calculando totales...');
+        this.calculateTotals();
+    }
+    next();
 });
 
 export default mongoose.model('Order', orderSchema);

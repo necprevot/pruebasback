@@ -1,4 +1,3 @@
-
 // ==========================================
 // CONFIGURACIÓN
 // ==========================================
@@ -28,7 +27,6 @@ const Storage = {
     if (userData) {
       localStorage.setItem(AUTH.STORAGE.USER, JSON.stringify(userData));
     }
-    // NUEVO: Crear cookie para vistas protegidas
     document.cookie = `bbfermentos_auth_token=${token}; path=/; max-age=86400`;
   },
   
@@ -44,7 +42,6 @@ const Storage = {
   clear() {
     localStorage.removeItem(AUTH.STORAGE.TOKEN);
     localStorage.removeItem(AUTH.STORAGE.USER);
-    // NUEVO: Limpiar cookie
     document.cookie = 'bbfermentos_auth_token=; path=/; max-age=0';
   },
   
@@ -185,9 +182,11 @@ const Auth = {
       const { response, data } = await API.post(AUTH.ENDPOINTS.LOGIN, { email, password });
       
       if (response.ok && data.status === 'success') {
+        console.log('✅ Login exitoso:', data.payload);
+        
         Storage.saveAuth(data.payload.token, data.payload.user);
         
-        // NUEVO: Sincronizar carrito con usuario
+        // Sincronizar carrito
         await this.syncUserCart(data.payload.user);
         
         UI.showAlert('¡Login exitoso!', 'success');
@@ -201,24 +200,84 @@ const Auth = {
         UI.showAlert(data.message || 'Credenciales inválidas', 'error');
       }
     } catch (error) {
+      console.error('❌ Error en login:', error);
       UI.showAlert('Error de conexión', 'error');
     } finally {
       UI.setButtonLoading('loginBtn', false);
     }
   },
   
-  //  Sincronizar carrito con usuario
   async syncUserCart(user) {
     try {
+      console.log('🔄 [Auth] Sincronizando carrito del usuario...');
+      console.log('👤 [Auth] Usuario recibido:', user);
+      
+      const localCartId = localStorage.getItem('bbfermentos_cart_id');
+      
+      let userCartId = null;
       
       if (user.cart) {
-        localStorage.setItem('bbfermentos_cart_id', user.cart);
-        localStorage.setItem('bbfermentos_cart_timestamp', Date.now().toString());
-      } else {
-        console.log('Usuario no tiene carrito asignado');
+        if (typeof user.cart === 'object' && user.cart._id) {
+          userCartId = user.cart._id.toString();
+        } else {
+          userCartId = user.cart.toString();
+        }
       }
+      
+      console.log('📦 [Auth] Carrito local:', localCartId);
+      console.log('👤 [Auth] Carrito del usuario:', userCartId);
+      
+      if (!userCartId) {
+        console.warn('⚠️ [Auth] Usuario no tiene carrito asignado');
+        return;
+      }
+      
+      if (localCartId && localCartId !== userCartId) {
+        console.log('🔀 [Auth] Detectado carrito diferente, migrando productos...');
+        
+        try {
+          const localCartResponse = await fetch(`/api/carts/${localCartId}`);
+          if (localCartResponse.ok) {
+            const localCartData = await localCartResponse.json();
+            const localProducts = localCartData.cart.products || [];
+            
+            console.log(`📦 [Auth] Carrito local tiene ${localProducts.length} productos`);
+            
+            if (localProducts.length > 0) {
+              const token = localStorage.getItem('bbfermentos_auth_token');
+              
+              for (const item of localProducts) {
+                const productId = item.product._id || item.product;
+                const quantity = item.quantity;
+                
+                console.log(`➕ [Auth] Migrando ${quantity}x producto ${productId}`);
+                
+                for (let i = 0; i < quantity; i++) {
+                  await fetch(`/api/carts/${userCartId}/product/${productId}`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`
+                    }
+                  });
+                }
+              }
+              
+              console.log('✅ [Auth] Productos migrados exitosamente');
+            }
+          }
+        } catch (migrateError) {
+          console.error('❌ [Auth] Error migrando productos:', migrateError);
+        }
+      }
+      
+      localStorage.setItem('bbfermentos_cart_id', userCartId);
+      localStorage.setItem('bbfermentos_cart_timestamp', Date.now().toString());
+      
+      console.log('✅ [Auth] Carrito sincronizado:', userCartId);
+      
     } catch (error) {
-      console.error('Error sincronizando carrito:', error);
+      console.error('❌ [Auth] Error sincronizando carrito:', error);
     }
   },
   
@@ -227,7 +286,6 @@ const Auth = {
     UI.setButtonLoading('registerBtn', true);
     
     try {
-      // Validaciones
       if (!Validators.email(userData.email)) {
         UI.showFieldError('email', 'Email inválido');
         return;
@@ -238,7 +296,6 @@ const Auth = {
         return;
       }
       
-      // Validar confirmación de contraseña
       const confirmPassword = document.getElementById('confirmPassword')?.value;
       if (confirmPassword && userData.password !== confirmPassword) {
         UI.showFieldError('confirmPassword', 'Las contraseñas no coinciden');
@@ -250,8 +307,6 @@ const Auth = {
       
       if (response.ok && data.status === 'success') {
         UI.showAlert('¡Cuenta creada!', 'success');
-        
-        // Auto-login
         setTimeout(() => this.login(userData.email, userData.password), 1500);
       } else {
         UI.showAlert(data.message || 'Error al registrar', 'error');
@@ -265,7 +320,6 @@ const Auth = {
   
   logout() {
     Storage.clear();
-    // Limpiar también el carrito
     localStorage.removeItem('bbfermentos_cart_id');
     localStorage.removeItem('bbfermentos_cart_timestamp');
     UI.showAlert('Sesión cerrada', 'info');
@@ -299,10 +353,8 @@ const Auth = {
 // ==========================================
 // INICIALIZACIÓN
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-  // Auto-inicializar formularios
+function initializeLoginForm() {
   const loginForm = document.getElementById('loginForm');
-  const registerForm = document.getElementById('registerForm');
   
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
@@ -311,9 +363,12 @@ document.addEventListener('DOMContentLoaded', () => {
       await Auth.login(formData.get('email'), formData.get('password'));
     });
   }
+}
+
+function initializeRegisterForm() {
+  const registerForm = document.getElementById('registerForm');
   
   if (registerForm) {
-    // Validación en tiempo real de confirmación de contraseña
     const passwordField = document.getElementById('password');
     const confirmPasswordField = document.getElementById('confirmPassword');
     
@@ -351,10 +406,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   }
-  
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initializeLoginForm();
+  initializeRegisterForm();
   Auth.updateUI();
   
-  // Configurar cookie al cargar si ya está autenticado
   const token = Storage.getToken();
   if (token) {
     document.cookie = `bbfermentos_auth_token=${token}; path=/; max-age=86400`;
