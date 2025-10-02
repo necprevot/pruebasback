@@ -5,31 +5,23 @@ import passport from "passport";
 const router = Router();
 const sessionController = new SessionController();
 
-console.log('📍 [sessions.router.js] Router de sesiones cargado');
-console.log('📍 [sessions.router.js] SessionController instanciado');
-
 // POST /api/sessions/login - Login con JWT
 router.post('/login', (req, res) => {
-    console.log('📍 [Route] POST /api/sessions/login');
     sessionController.login(req, res);
 });
 
 // POST /api/sessions/logout - Logout
 router.post('/logout', (req, res) => {
-    console.log('📍 [Route] POST /api/sessions/logout');
     sessionController.logout(req, res);
 });
 
 // POST /api/sessions/forgot-password - Solicitar reset de contraseña
 router.post('/forgot-password', (req, res) => {
-    console.log('📍 [Route] POST /api/sessions/forgot-password');
     sessionController.requestPasswordReset(req, res);
 });
 
 // POST /api/sessions/reset-password - Resetear contraseña con token
 router.post('/reset-password', (req, res) => {
-    console.log('📍 [Route] POST /api/sessions/reset-password');
-    console.log('📥 [Route] Body:', req.body);
     sessionController.resetPassword(req, res);
 });
 
@@ -37,7 +29,6 @@ router.post('/reset-password', (req, res) => {
 router.get('/current',
     passport.authenticate('current', { session: false }),
     (req, res) => {
-        console.log('📍 [Route] GET /api/sessions/current con estrategia "current"');
         sessionController.current(req, res);
     }
 );
@@ -45,12 +36,10 @@ router.get('/current',
 // 🧪 ENDPOINT DE PRUEBA PARA EMAIL
 router.post('/test-email', async (req, res) => {
     try {
-        console.log('🧪 [Route] POST /api/sessions/test-email');
         
         const { email } = req.body;
         const testEmail = email || 'test@example.com';
         
-        console.log('📧 [Route] Enviando email de prueba a:', testEmail);
         
         // Import dinámico del EmailService
         const { default: EmailService } = await import('../services/EmailService.js');
@@ -87,7 +76,7 @@ router.post('/test-email', async (req, res) => {
         }
         
     } catch (error) {
-        console.error('❌ [Route] Error en test-email:', error.message);
+        console.error('[Route] Error en test-email:', error.message);
         res.status(500).json({
             status: 'error',
             message: 'Error interno del servidor',
@@ -96,10 +85,9 @@ router.post('/test-email', async (req, res) => {
     }
 });
 
-// 🔍 ENDPOINT PARA VERIFICAR CONFIGURACIÓN
+// ENDPOINT PARA VERIFICAR CONFIGURACIÓN
 router.get('/email-config', async (req, res) => {
     try {
-        console.log('🔍 [Route] GET /api/sessions/email-config');
         
         // Import dinámico del EmailService
         const { default: EmailService } = await import('../services/EmailService.js');
@@ -122,7 +110,7 @@ router.get('/email-config', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ [Route] Error verificando configuración:', error.message);
+        console.error('[Route] Error verificando configuración:', error.message);
         res.status(500).json({
             status: 'error',
             message: 'Error verificando configuración',

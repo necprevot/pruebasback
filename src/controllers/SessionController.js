@@ -1,4 +1,4 @@
-import UserService from '../services/UserService.js'; // AGREGADO: import faltante
+import UserService from '../services/UserService.js'; 
 
 class SessionController {
     constructor() {
@@ -7,29 +7,18 @@ class SessionController {
 
     async login(req, res) {
         try {
-            console.log('🔐 [SessionController] Iniciando proceso de login');
-            console.log('📥 [SessionController] Datos recibidos:', {
-                email: req.body.email,
-                password: req.body.password ? '***' : 'MISSING'
-            });
-
             const { email, password } = req.body;
 
             // Validación de campos para login
             if (!email || !password) {
-                console.log('❌ [SessionController] Faltan credenciales');
                 return res.status(400).json({
                     status: 'error',
                     message: 'Email y password son requeridos'
                 });
             }
 
-            console.log('🔄 [SessionController] Procesando autenticación...');
-
             // Usar servicio que implementa bcrypt y JWT
             const result = await this.userService.loginUser(email, password);
-
-            console.log('✅ [SessionController] Login exitoso - Token JWT generado');
 
             res.cookie('bbfermentos_auth_token', result.token, {
             httpOnly: true,
@@ -49,7 +38,7 @@ class SessionController {
             });
 
         } catch (error) {
-            console.error('❌ [SessionController] Error en login:', error.message);
+            console.error('[SessionController] Error en login:', error.message);
 
             // Manejo de errores de autenticación
             res.status(401).json({
@@ -61,14 +50,13 @@ class SessionController {
 
     async logout(req, res) {
         try {
-            console.log('🚪 [SessionController] Procesando logout');
 
             res.json({
                 status: 'success',
                 message: 'Logout exitoso - Por favor elimina el token del cliente'
             });
         } catch (error) {
-            console.error('❌ [SessionController] Error en logout:', error.message);
+            console.error('[SessionController] Error en logout:', error.message);
             res.status(500).json({
                 status: 'error',
                 message: error.message
@@ -78,35 +66,22 @@ class SessionController {
 
     async current(req, res) {
         try {
-            console.log('👤 [SessionController] Procesando /current');
-            console.log('🎫 [SessionController] Usuario del JWT:', {
-                id: req.user._id,
-                email: req.user.email,
-                role: req.user.role
-            });
-
             // Verificar que el usuario esté autenticado
             if (!req.user) {
-                console.log('❌ [SessionController] No hay usuario en el token');
                 return res.status(401).json({
                     status: 'error',
                     message: 'No autorizado - Token inválido o inexistente'
                 });
             }
-
-            console.log('✅ [SessionController] Usuario validado correctamente');
-
-            // IMPORTANTE: req.user ya viene como CurrentUserDTO desde Passport
-            // porque el Repository retorna CurrentUserDTO en findByIdForJWT
-            // NO contiene información sensible como password
+            // Responder con CurrentUserDTO sin información sensible
             res.json({
                 status: 'success',
                 message: 'Usuario validado correctamente',
-                payload: req.user // Ya es CurrentUserDTO sin información sensible
+                payload: req.user 
             });
 
         } catch (error) {
-            console.error('❌ [SessionController] Error en /current:', error.message);
+            console.error('[SessionController] Error en /current:', error.message);
             res.status(500).json({
                 status: 'error',
                 message: 'Error interno del servidor'
@@ -117,13 +92,11 @@ class SessionController {
     // NUEVO: Solicitar reset de contraseña
     async requestPasswordReset(req, res) {
         try {
-            console.log('🔐 [SessionController] Solicitud de reset de contraseña');
 
             const { email } = req.body;
 
             // Validación de email
             if (!email) {
-                console.log('❌ [SessionController] Email faltante en request');
                 return res.status(400).json({
                     status: 'error',
                     message: 'El email es requerido'
@@ -133,18 +106,13 @@ class SessionController {
             // Validación básica de formato de email
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
-                console.log('❌ [SessionController] Formato de email inválido');
                 return res.status(400).json({
                     status: 'error',
                     message: 'Formato de email inválido'
                 });
             }
 
-            console.log('📧 [SessionController] Procesando solicitud para:', email);
-
             const result = await this.userService.requestPasswordReset(email);
-
-            console.log('✅ [SessionController] Solicitud de reset procesada');
 
             // Siempre devolver el mismo mensaje por seguridad
             res.json({
@@ -153,7 +121,7 @@ class SessionController {
             });
 
         } catch (error) {
-            console.error('❌ [SessionController] Error en request password reset:', error.message);
+            console.error('[SessionController] Error en request password reset:', error.message);
 
             // Por seguridad, devolver siempre el mismo mensaje
             res.json({
@@ -166,18 +134,11 @@ class SessionController {
     // NUEVO: Resetear contraseña
     async resetPassword(req, res) {
         try {
-            console.log('🔄 [SessionController] Reset de contraseña');
-            console.log('📥 [SessionController] Body recibido:', {
-                hasToken: !!req.body.token,
-                hasNewPassword: !!req.body.newPassword,
-                hasConfirmPassword: !!req.body.confirmPassword
-            });
 
             const { token, newPassword, confirmPassword } = req.body;
 
             // Validaciones
             if (!token) {
-                console.log('❌ [SessionController] Token faltante');
                 return res.status(400).json({
                     status: 'error',
                     message: 'Token de restablecimiento requerido'
@@ -185,7 +146,6 @@ class SessionController {
             }
 
             if (!newPassword) {
-                console.log('❌ [SessionController] Nueva contraseña faltante');
                 return res.status(400).json({
                     status: 'error',
                     message: 'Nueva contraseña requerida'
@@ -193,7 +153,6 @@ class SessionController {
             }
 
             if (newPassword.length < 6) {
-                console.log('❌ [SessionController] Contraseña muy corta');
                 return res.status(400).json({
                     status: 'error',
                     message: 'La contraseña debe tener al menos 6 caracteres'
@@ -201,7 +160,6 @@ class SessionController {
             }
 
             if (newPassword !== confirmPassword) {
-                console.log('❌ [SessionController] Contraseñas no coinciden');
                 return res.status(400).json({
                     status: 'error',
                     message: 'Las contraseñas no coinciden'
@@ -216,8 +174,8 @@ class SessionController {
             });
 
         } catch (error) {
-            console.error('❌ [SessionController] Error en reset password:', error.message);
-            console.error('❌ [SessionController] Stack trace:', error.stack);
+            console.error('[SessionController] Error en reset password:', error.message);
+            console.error('[SessionController] Stack trace:', error.stack);
 
             // Manejo específico de errores
             if (error.message.includes('igual a la contraseña actual') ||

@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import ProductManager from '../managers/ProductManager.js';
 import CartManager from '../managers/CartManager.js';
-// ✅ ACTUALIZADO: Importar desde auth.js unificado
 import { authenticateView, authorizeView } from '../middleware/auth.js';
 
 const router = Router();
@@ -119,8 +118,8 @@ router.get('/', (req, res) => {
 // RUTA PROTEGIDA: Panel de Administración
 // ========================================
 router.get('/realtimeproducts', 
-    authenticateView,           // ✅ Middleware unificado
-    authorizeView('admin'),     // ✅ Middleware unificado
+    authenticateView,
+    authorizeView('admin'),
     async (req, res) => {
         try {
             const result = await productManager.getProducts({
@@ -144,8 +143,6 @@ router.get('/realtimeproducts',
         }
     }
 );
-
-// ... resto de las rutas sin cambios
 
 router.get('/category/:category', async (req, res) => {
     try {

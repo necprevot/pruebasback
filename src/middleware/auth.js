@@ -1,7 +1,3 @@
-/**
- * Middleware de Autenticación UNIFICADO
- */
-
 import passport from 'passport';
 import cookieParser from 'cookie-parser';
 
@@ -15,7 +11,7 @@ import cookieParser from 'cookie-parser';
 function authenticateJWT(req, res, next) {
   passport.authenticate('jwt', { session: false }, (err, user, info) => {
     if (err) {
-      console.error('❌ [Auth] Error:', err.message);
+      console.error(' [Auth] Error:', err.message);
       return res.status(500).json({
         status: 'error',
         message: 'Error interno de autenticación'
@@ -23,11 +19,10 @@ function authenticateJWT(req, res, next) {
     }
     
     if (!user) {
-      console.log('❌ [Auth] Token inválido');
+
       return { authenticated: false, user: null, info };
     }
     
-    console.log('✅ [Auth] Usuario autenticado:', user.email);
     return { authenticated: true, user, info: null };
   })(req, res, next);
 }
@@ -85,9 +80,7 @@ export const authorize = (...roles) => {
   };
 };
 
-/**
- * Auth opcional (no bloquea si no hay token)
- */
+
 export const optionalAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
   
@@ -112,18 +105,14 @@ export const optionalAuth = (req, res, next) => {
  */
 export const authenticateView = (req, res, next) => {
 
-  console.log('🔐 [AuthView] Verificando autenticación para vista');
-  console.log('🍪 [AuthView] Cookies disponibles:', Object.keys(req.cookies || {}));
   // Leer token de cookie
   const token = req.cookies?.bbfermentos_auth_token;
   
   if (!token) {
-    console.log('❌ [AuthView] No hay token de autenticación');
+
     const redirectUrl = encodeURIComponent(req.originalUrl);
     return res.redirect('/login?redirect=' + encodeURIComponent(req.originalUrl));
   }
-  
-console.log('🎫 [AuthView] Token encontrado, verificando...');
     
     // Configurar el header Authorization para que Passport pueda leerlo
     req.headers.authorization = `Bearer ${token}`;
@@ -133,17 +122,15 @@ console.log('🎫 [AuthView] Token encontrado, verificando...');
     session: false,
   }, (err, user, info) => {
     if (err) {
-      console.error('❌ [AuthView] Error:', err);
+      console.error(' [AuthView] Error:', err);
       return res.redirect('/login?error=auth_error');
     }
     
     if (!user) {
-      console.log('❌ [AuthView] Token inválido');
       return res.redirect('/login?error=invalid_token');
     }
     
     req.user = user;
-    console.log('✅ [AuthView] Usuario autenticado:', user.email, 'Role:', user.role);
     next();
   })(req, res, next);
 };

@@ -1,7 +1,3 @@
-/**
- * Router de Órdenes
- * Define todas las rutas relacionadas con órdenes de compra
- */
 
 import { Router } from 'express';
 import OrderController from '../controllers/OrderController.js';
@@ -10,8 +6,6 @@ import { asyncHandler } from '../utils/CustomErrors.js';
 
 const router = Router();
 const orderController = new OrderController();
-
-console.log('📦 [Orders Router] Configurando rutas de órdenes');
 
 // ====================================
 // RUTAS PROTEGIDAS PARA USUARIOS
@@ -126,16 +120,5 @@ router.post('/orders',
     });
   })
 );
-
-console.log('✅ [Orders Router] Rutas configuradas:');
-console.log('   🔐 POST   /api/orders                     - Usuario (crear orden)');
-console.log('   🔐 GET    /api/orders/user/me             - Usuario (mis órdenes)');
-console.log('   🔐 GET    /api/orders/:id                 - Usuario (ver orden)');
-console.log('   🔐 POST   /api/orders/:id/cancel          - Usuario (cancelar)');
-console.log('   👨‍💼 GET    /api/orders                     - Solo Admin (todas)');
-console.log('   👨‍💼 GET    /api/orders/stats               - Solo Admin (estadísticas)');
-console.log('   👨‍💼 PATCH  /api/orders/:id/status          - Solo Admin (estado)');
-console.log('   👨‍💼 POST   /api/orders/:id/confirm-payment - Solo Admin (confirmar pago)');
-console.log('   👨‍💼 POST   /api/orders/:id/tracking        - Solo Admin (tracking)');
 
 export default router;

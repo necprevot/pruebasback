@@ -1,12 +1,4 @@
-/**
- * CurrentUserDTO - Data Transfer Object para endpoint /current
- * Contiene SOLO información NO SENSIBLE del usuario autenticado
- * 
- * CRITERIO DE EVALUACIÓN:
- * - NO incluir password (obvio)
- * - NO incluir información interna del sistema
- * - SOLO información que el frontend necesita para mostrar
- */
+
 class CurrentUserDTO {
     constructor(user) {
         // Información básica del usuario

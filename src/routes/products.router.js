@@ -1,25 +1,13 @@
-/**
- * Router de Productos - ACTUALIZADO con nuevos middlewares de permisos
- * Ejemplo de cómo usar el sistema de permisos granular
- */
-
 import { Router } from 'express';
 import ProductManager from '../managers/ProductManager.js';
 import { validateProductQuery } from '../middleware/queryValidation.js';
 import { authenticate, authorize, optionalAuth } from '../middleware/auth.js';
-// NUEVO: Importar middlewares de permisos avanzados
-import { 
-    requirePermission, 
-    requireAnyPermission,
-    rolBasedRateLimit 
-} from '../middleware/permissions.js';
-// NUEVO: Importar asyncHandler para manejo de errores
+import { requirePermission, requireAnyPermission,rolBasedRateLimit } from '../middleware/permissions.js';
 import { asyncHandler } from '../utils/CustomErrors.js';
 
 const router = Router();
 const productManager = new ProductManager();
 
-console.log('📦 [Products Router] Configurando rutas con autorización mejorada');
 
 // ====================================
 // RUTAS PÚBLICAS (NO REQUIEREN AUTH)
@@ -29,25 +17,19 @@ console.log('📦 [Products Router] Configurando rutas con autorización mejorad
  * GET /api/products
  * Obtener lista de productos con paginación y filtros
  * Público - No requiere autenticación
- * NUEVO: Con rate limiting diferenciado por rol
  */
 router.get("/", 
     validateProductQuery, 
     optionalAuth,
-    // NUEVO: Rate limiting por rol
+    // Rate limiting por rol
     rolBasedRateLimit({
         admin: { requests: 1000, window: 60000 },
         premium: { requests: 500, window: 60000 },
         user: { requests: 200, window: 60000 },
         guest: { requests: 50, window: 60000 }
     }),
-    // NUEVO: Usar asyncHandler para manejo automático de errores
+    // Usar asyncHandler para manejo automático de errores
     asyncHandler(async (req, res) => {
-        console.log('📥 GET /api/products con query validado:', req.query);
-        
-        if (req.user) {
-            console.log('👤 Usuario autenticado haciendo consulta:', req.user.email);
-        }
 
         const result = await productManager.getProducts(req.query);
 
@@ -109,7 +91,7 @@ router.get("/categories", asyncHandler(async (req, res) => {
 /**
  * GET /api/products/stats
  * Obtener estadísticas de productos
- * NUEVO: Usando requireAnyPermission - Admin o Premium pueden ver
+ * Usando requireAnyPermission - Admin o Premium pueden ver
  */
 router.get("/stats", 
     authenticate,
@@ -138,17 +120,13 @@ router.get("/:pid", asyncHandler(async (req, res) => {
 /**
  * POST /api/products
  * Crear un nuevo producto
- * NUEVO: Usando requirePermission en lugar de authorize
- * Más granular - requiere específicamente el permiso 'products:create'
+ * Usando requirePermission en lugar de authorize
+ * Requiere específicamente el permiso 'products:create'
  */
 router.post('/', 
     authenticate,
-    // OPCIÓN 1: Usar requirePermission (más granular)
     requirePermission('products:create'),
-    // OPCIÓN 2: Usar authorize tradicional (también funciona)
-    // authorize('admin'),
     asyncHandler(async (req, res) => {
-        console.log('📝 [Admin] Creando nuevo producto:', req.user.email);
 
         const newProduct = await productManager.addProduct(req.body);
 
@@ -170,14 +148,13 @@ router.post('/',
 /**
  * PUT /api/products/:pid
  * Actualizar un producto existente
- * NUEVO: Con requirePermission
+ * Con requirePermission
  */
 router.put('/:pid', 
     authenticate,
     requirePermission('products:update'),
     asyncHandler(async (req, res) => {
         const { pid } = req.params;
-        console.log('📝 [Admin] Actualizando producto:', pid, 'por:', req.user.email);
 
         const updatedProduct = await productManager.updateProductById(pid, req.body);
 
@@ -199,14 +176,13 @@ router.put('/:pid',
 /**
  * DELETE /api/products/:pid
  * Eliminar un producto
- * NUEVO: Con requirePermission
+ * Con requirePermission
  */
 router.delete('/:pid', 
     authenticate,
     requirePermission('products:delete'),
     asyncHandler(async (req, res) => {
         const { pid } = req.params;
-        console.log('🗑️ [Admin] Eliminando producto:', pid, 'por:', req.user.email);
 
         await productManager.deleteProductById(pid);
 
@@ -223,15 +199,5 @@ router.delete('/:pid',
         });
     })
 );
-
-console.log('✅ [Products Router] Rutas configuradas con permisos granulares:');
-console.log('   📖 GET    /api/products          - Público (con rate limit)');
-console.log('   📖 GET    /api/products/:pid     - Público');
-console.log('   📖 GET    /api/products/search   - Público');
-console.log('   📖 GET    /api/products/categories - Público');
-console.log('   🔐 GET    /api/products/stats    - Admin o Premium');
-console.log('   🔐 POST   /api/products          - Requiere "products:create"');
-console.log('   🔐 PUT    /api/products/:pid     - Requiere "products:update"');
-console.log('   🔐 DELETE /api/products/:pid     - Requiere "products:delete"');
 
 export default router;

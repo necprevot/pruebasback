@@ -1,7 +1,4 @@
-/**
- * UserDTO - Data Transfer Object para Usuario
- * Contiene solo información NO SENSIBLE que puede ser expuesta al cliente
- */
+
 class UserDTO {
     constructor(user) {
         this._id = user._id;

@@ -54,10 +54,6 @@ export const configureWebSockets = (io) => {
     });
     
     io.on('connection', (socket) => {
-            id: socket.id,
-            user: socket.user?.email || 'invitado',
-            role: socket.user?.role || 'guest',
-        });
         
         // Enviar productos iniciales (público)
         productManager.getProducts({ limit: 100, status: undefined })

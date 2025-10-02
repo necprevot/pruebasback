@@ -1,7 +1,4 @@
-/**
- * BaseRepository - Capa de abstracción entre Service y DAO
- * Implementa el patrón Repository para encapsular la lógica de acceso a datos
- */
+
 class BaseRepository {
     constructor(dao) {
         if (!dao) {

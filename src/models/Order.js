@@ -1,9 +1,3 @@
-/**
- * Modelo de Orden de Compra - CORREGIDO
- * Representa una orden realizada por un usuario
- * ✅ Sin índices duplicados
- */
-
 import mongoose from 'mongoose';
 import { ORDER_STATUS, PAYMENT_METHODS, PAYMENT_STATUS } from '../config/constants.js';
 
@@ -48,11 +42,10 @@ const shippingAddressSchema = new mongoose.Schema({
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
-  // ✅ CORRECCIÓN: Eliminar unique: true aquí si vamos a usar schema.index()
-  // O mantener unique: true aquí y eliminar el schema.index() de abajo
+  
   orderNumber: {
     type: String,
-    unique: true,  // ✅ Opción 1: Mantener solo esto
+    unique: true,
     required: true
   },
   
@@ -60,7 +53,7 @@ const orderSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
-    index: true  // ✅ Este index simple está bien
+    index: true
   },
   
   items: {
@@ -116,7 +109,7 @@ const orderSchema = new mongoose.Schema({
     enum: Object.values(ORDER_STATUS),
     default: ORDER_STATUS.PENDING,
     required: true,
-    index: true  // ✅ Este index simple está bien
+    index: true  
   },
   
   statusHistory: [{
@@ -182,18 +175,13 @@ const orderSchema = new mongoose.Schema({
   versionKey: false
 });
 
-// ✅ ÍNDICES COMPUESTOS (sin duplicados)
-// Solo declarar aquí si NO los declaraste arriba con index: true
+// ÍNDICES COMPUESTOS
 
-// Ya tenemos index en 'user' y 'status' arriba, así que estos son adicionales:
 orderSchema.index({ user: 1, createdAt: -1 });  // Para búsquedas de órdenes por usuario
 orderSchema.index({ status: 1, createdAt: -1 }); // Para búsquedas por estado
 
-// ❌ ELIMINAR ESTA LÍNEA - Es la que causa el warning:
-// orderSchema.index({ orderNumber: 1 }, { unique: true });
-// Ya está definido como unique: true en el campo arriba
 
-// ✅ Virtual para número de items
+//  Virtual para número de items
 orderSchema.virtual('itemCount').get(function() {
   return this.items.reduce((sum, item) => sum + item.quantity, 0);
 });

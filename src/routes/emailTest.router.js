@@ -8,8 +8,6 @@ const userService = new UserService();
 // GET /api/email/status - Estado del servicio de email
 router.get('/status', async (req, res) => {
     try {
-        console.log('🔍 [EmailTest] Verificando estado del servicio de email...');
-        
         const hasConfig = !!(process.env.EMAIL_USER && process.env.EMAIL_APP_PASSWORD);
         const connectionTest = hasConfig ? await emailService.verifyConnection() : false;
         
@@ -29,7 +27,7 @@ router.get('/status', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ [EmailTest] Error obteniendo estado:', error.message);
+        console.error('[EmailTest] Error obteniendo estado:', error.message);
         res.status(500).json({
             status: 'error',
             message: 'Error obteniendo estado del servicio: ' + error.message
@@ -40,8 +38,6 @@ router.get('/status', async (req, res) => {
 // GET /api/email/test - Probar configuración de email
 router.get('/test', async (req, res) => {
     try {
-        console.log('🧪 [EmailTest] Iniciando prueba de configuración de email');
-        
         const result = await userService.checkEmailConfiguration();
         
         res.json({
@@ -56,7 +52,7 @@ router.get('/test', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ [EmailTest] Error en prueba:', error.message);
+        console.error('[EmailTest] Error en prueba:', error.message);
         res.status(500).json({
             status: 'error',
             message: 'Error probando configuración: ' + error.message
@@ -67,8 +63,6 @@ router.get('/test', async (req, res) => {
 // POST /api/email/send-test - Enviar email de prueba
 router.post('/send-test', async (req, res) => {
     try {
-        console.log('🧪 [EmailTest] Enviando email de prueba');
-        
         const { email } = req.body;
         
         if (!email) {
@@ -97,7 +91,7 @@ router.post('/send-test', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ [EmailTest] Error enviando email de prueba:', error.message);
+        console.error('[EmailTest] Error enviando email de prueba:', error.message);
         res.status(500).json({
             status: 'error',
             message: 'Error enviando email de prueba: ' + error.message
@@ -108,8 +102,6 @@ router.post('/send-test', async (req, res) => {
 // POST /api/email/send-welcome - Enviar email de bienvenida manual
 router.post('/send-welcome', async (req, res) => {
     try {
-        console.log('🧪 [EmailTest] Enviando email de bienvenida manual');
-        
         const { email, firstName, lastName } = req.body;
         
         if (!email || !firstName || !lastName) {
@@ -129,14 +121,11 @@ router.post('/send-welcome', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ [EmailTest] Error enviando email de bienvenida:', error.message);
         res.status(500).json({
             status: 'error',
             message: 'Error enviando email de bienvenida: ' + error.message
         });
     }
 });
-
-console.log('📧 [EmailTest] Router de testing de emails cargado');
 
 export default router;

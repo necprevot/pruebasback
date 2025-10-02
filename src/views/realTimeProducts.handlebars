@@ -1,4 +1,4 @@
-<!-- ✅ CONTENIDO SOLO PARA ADMIN (ya verificado por middleware) -->
+<!-- CONTENIDO SOLO PARA ADMIN (ya verificado por middleware) -->
 <h2>🔧 Panel de Administración - Productos en Tiempo Real</h2>
 
 <div id="status" class="mb-3">
@@ -118,7 +118,6 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    console.log('🔄 Iniciando realTimeProducts para ADMIN...');
     
     // Obtener token de autenticación
     function getAuthToken() {
@@ -128,7 +127,7 @@
     const token = getAuthToken();
     
     if (!token) {
-        console.error('❌ No hay token de autenticación');
+        console.error(' No hay token de autenticación');
         alert('Sesión expirada. Redirigiendo al login...');
         window.location.href = '/login';
     }
@@ -147,20 +146,17 @@
     const editModal = document.getElementById('editModal');
 
     socket.on('connect', () => {
-        console.log('✅ Conectado al servidor');
         connectionStatus.textContent = 'Conectado ✓';
         connectionStatus.style.color = 'green';
         socket.emit('requestProducts');
     });
 
     socket.on('disconnect', (reason) => {
-        console.log('❌ Desconectado:', reason);
         connectionStatus.textContent = 'Desconectado ✗';
         connectionStatus.style.color = 'red';
     });
 
     socket.on('updateProducts', (products) => {
-        console.log('📦 Productos recibidos:', products?.length || 0);
         if (products) {
             sessionStorage.setItem('currentProducts', JSON.stringify(products));
             renderProducts(products);

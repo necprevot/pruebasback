@@ -1,66 +1,44 @@
-/**
- * OrderService - Lógica de negocio para órdenes (VERSIÓN COMPLETA)
- * Maneja toda la lógica de creación y gestión de órdenes
- */
-
 import Order from '../models/Order.js';
 import CartDAO from '../dao/CartDAO.js';
 import UserDAO from '../dao/UserDAO.js';
 import Product from '../models/Product.js';
 import emailService from './EmailService.js';
-import {
-  NotFoundError,
-  BusinessError,
-  InsufficientStockError,
-  OrderError
-} from '../utils/CustomErrors.js';
-import {
-  ORDER_STATUS,
-  PAYMENT_STATUS,
-  LIMITS,
-  ERROR_MESSAGES,
-  SYSTEM_EVENTS
-} from '../config/constants.js';
+import { NotFoundError, BusinessError, InsufficientStockError, OrderError} from '../utils/CustomErrors.js';
+import {ORDER_STATUS, PAYMENT_STATUS, LIMITS, ERROR_MESSAGES, SYSTEM_EVENTS} from '../config/constants.js';
 import mongoose from 'mongoose';
 
 class OrderService {
   constructor() {
     this.cartDAO = new CartDAO();
     this.userDAO = new UserDAO();
-    console.log('📦 [OrderService] Servicio de órdenes inicializado');
   }
 
-  /**
-   * Crear orden desde carrito
-   * LÓGICA DE COMPRA COMPLETA CON VERIFICACIÓN DE STOCK
-   */
   async createOrderFromCart(userId, shippingAddress, paymentMethod, notes = '') {
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      console.log('🛒 [OrderService] Creando orden para usuario:', userId);
 
-      // 1. Obtener usuario y su carrito
+      // Obtener usuario y su carrito
       const user = await this.userDAO.findById(userId, 'cart');
       if (!user || !user.cart) {
         throw new NotFoundError('Carrito', user?.cart);
       }
 
-      // 2. Obtener carrito completo con productos
+      // Obtener carrito completo con productos
       const cart = await this.cartDAO.getCartWithProducts(user.cart);
       
       if (!cart.products || cart.products.length === 0) {
         throw new BusinessError(ERROR_MESSAGES.CART_EMPTY);
       }
 
-      // 3. Validar límites
+      // Validar límites
       const totalItems = cart.products.reduce((sum, item) => sum + item.quantity, 0);
       if (totalItems > LIMITS.MAX_CART_ITEMS) {
         throw new BusinessError(`El carrito excede el límite de ${LIMITS.MAX_CART_ITEMS} items`);
       }
 
-      // 4. Preparar items y VERIFICAR STOCK
+      // Preparar items y VERIFICAR STOCK
       const orderItems = [];
       const unavailableProducts = [];
       let subtotal = 0;
@@ -76,7 +54,7 @@ class OrderService {
           continue;
         }
 
-        // ✅ VERIFICAR STOCK DISPONIBLE
+        // VERIFICAR STOCK DISPONIBLE
         if (!product.status) {
           unavailableProducts.push({
             id: product._id,
@@ -97,7 +75,7 @@ class OrderService {
           continue;
         }
 
-        // ✅ Producto disponible - agregar a la orden
+        // Producto disponible - agregar a la orden
         const itemSubtotal = product.price * cartItem.quantity;
         
         orderItems.push({
@@ -115,14 +93,13 @@ class OrderService {
 
         subtotal += itemSubtotal;
 
-        // ✅ DESCONTAR STOCK
+        // DESCONTAR STOCK
         product.stock -= cartItem.quantity;
         await product.save({ session });
         
-        console.log(`✅ Stock actualizado para ${product.title}: ${product.stock + cartItem.quantity} -> ${product.stock}`);
       }
 
-      // 5. Verificar si hay productos disponibles
+      // Verificar si hay productos disponibles
       if (orderItems.length === 0) {
         await session.abortTransaction();
         throw new BusinessError(
@@ -131,19 +108,17 @@ class OrderService {
         );
       }
 
-      // 6. Si hay productos no disponibles, informar pero continuar con los disponibles
+      // Si hay productos no disponibles, informar pero continuar con los disponibles
       if (unavailableProducts.length > 0) {
-        console.log('⚠️ [OrderService] Productos no disponibles:', unavailableProducts);
-        // Aquí podrías enviar un email al usuario informando de los productos no procesados
       }
 
-      // 7. Calcular totales
-      const discount = 0; // Implementar lógica de descuentos aquí
+      // Calcular totales
+      const discount = 0; 
       const shipping = subtotal >= LIMITS.FREE_SHIPPING_AMOUNT ? 0 : 5000;
       const tax = Math.round((subtotal - discount) * 0.19); // IVA 19%
       const total = subtotal - discount + shipping + tax;
 
-      // 8. Validar monto mínimo
+      // Validar monto mínimo
       if (total < LIMITS.MIN_ORDER_AMOUNT) {
         await session.abortTransaction();
         throw new BusinessError(`El monto mínimo de orden es $${LIMITS.MIN_ORDER_AMOUNT}`);
@@ -168,23 +143,22 @@ class OrderService {
 
       await order.save({ session });
 
-      // 10. Limpiar carrito de productos procesados
+      // Limpiar carrito de productos procesados
       const processedProductIds = orderItems.map(item => item.product.toString());
       cart.products = cart.products.filter(
         item => !processedProductIds.includes(item.product._id.toString())
       );
       await cart.save({ session });
 
-      // 11. Commit de la transacción
+      // Commit de la transacción
       await session.commitTransaction();
       
-      console.log('✅ [OrderService] Orden creada exitosamente:', order.orderNumber);
-
-      // 12. Enviar email de confirmación (sin bloquear la respuesta)
+      
+      // Enviar email de confirmación (sin bloquear la respuesta)
       this.sendOrderConfirmationEmail(user.email, user.first_name, order)
         .catch(err => console.error('Error enviando email de confirmación:', err));
 
-      // 13. Retornar orden con información de productos no disponibles si los hay
+      // Retornar orden con información de productos no disponibles si los hay
       return {
         order,
         unavailableProducts: unavailableProducts.length > 0 ? unavailableProducts : null
@@ -192,7 +166,7 @@ class OrderService {
 
     } catch (error) {
       await session.abortTransaction();
-      console.error('❌ [OrderService] Error creando orden:', error);
+      console.error('[OrderService] Error creando orden:', error);
       throw error;
     } finally {
       session.endSession();
@@ -219,7 +193,7 @@ class OrderService {
 
       return order;
     } catch (error) {
-      console.error('❌ [OrderService] Error obteniendo orden:', error);
+      console.error('[OrderService] Error obteniendo orden:', error);
       throw error;
     }
   }
@@ -255,7 +229,7 @@ class OrderService {
         }
       };
     } catch (error) {
-      console.error('❌ [OrderService] Error obteniendo órdenes:', error);
+      console.error('[OrderService] Error obteniendo órdenes:', error);
       throw error;
     }
   }
@@ -298,7 +272,7 @@ class OrderService {
         }
       };
     } catch (error) {
-      console.error('❌ [OrderService] Error obteniendo todas las órdenes:', error);
+      console.error('[OrderService] Error obteniendo todas las órdenes:', error);
       throw error;
     }
   }
@@ -328,7 +302,7 @@ class OrderService {
 
       return order;
     } catch (error) {
-      console.error('❌ [OrderService] Error actualizando estado:', error);
+      console.error('[OrderService] Error actualizando estado:', error);
       throw error;
     }
   }
@@ -353,7 +327,7 @@ class OrderService {
 
       return order;
     } catch (error) {
-      console.error('❌ [OrderService] Error confirmando pago:', error);
+      console.error('[OrderService] Error confirmando pago:', error);
       throw error;
     }
   }
@@ -378,13 +352,12 @@ class OrderService {
       order.cancel(reason, userId);
       await order.save({ session });
 
-      // ✅ RESTAURAR STOCK de los productos
+      // RESTAURAR STOCK de los productos
       for (const item of order.items) {
         const product = await Product.findById(item.product).session(session);
         if (product) {
           product.stock += item.quantity;
           await product.save({ session });
-          console.log(`✅ Stock restaurado para ${product.title}: ${product.stock - item.quantity} -> ${product.stock}`);
         }
       }
 
@@ -397,7 +370,7 @@ class OrderService {
       return order;
     } catch (error) {
       await session.abortTransaction();
-      console.error('❌ [OrderService] Error cancelando orden:', error);
+      console.error('[OrderService] Error cancelando orden:', error);
       throw error;
     } finally {
       session.endSession();
@@ -454,7 +427,7 @@ class OrderService {
         cancelledOrders: 0
       };
     } catch (error) {
-      console.error('❌ [OrderService] Error obteniendo estadísticas:', error);
+      console.error('[OrderService] Error obteniendo estadísticas:', error);
       throw error;
     }
   }

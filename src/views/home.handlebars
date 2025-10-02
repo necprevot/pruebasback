@@ -295,7 +295,6 @@
         save: function (cartId) {
             localStorage.setItem('bbfermentos_cart_id', cartId);
             localStorage.setItem('bbfermentos_cart_timestamp', Date.now().toString());
-            console.log('💾 Carrito guardado:', cartId);
         },
 
         get: function () {
@@ -318,7 +317,6 @@
         clear: function () {
             localStorage.removeItem('bbfermentos_cart_id');
             localStorage.removeItem('bbfermentos_cart_timestamp');
-            console.log('🗑️ Carrito limpiado');
         },
 
         verify: async function (cartId) {
@@ -373,7 +371,6 @@
 
     async function initializeCart() {
         try {
-            console.log('🚀 Inicializando carrito...');
 
             const savedCartId = CartSession.get();
 
@@ -382,27 +379,23 @@
 
                 if (cartExists) {
                     currentCartId = savedCartId;
-                    console.log('✅ Carrito existente:', currentCartId);
                     await updateCartDisplay();
                     return;
                 } else {
-                    console.log('⚠️ Carrito no existe, creando nuevo');
                     CartSession.clear();
                 }
             }
 
-            console.log('🆕 Creando nuevo carrito...');
             await createNewCartInternal();
             
         } catch (error) {
-            console.error('❌ Error inicializando carrito:', error);
+            console.error('Error inicializando carrito:', error);
             showAlert('Error al inicializar carrito', 'warning');
         }
     }
 
     async function createNewCartInternal() {
         try {
-            console.log('📝 Creando carrito en servidor...');
             
             const response = await fetch('/api/carts', {
                 method: 'POST',
@@ -411,22 +404,20 @@
                 }
             });
 
-            console.log('📡 Response status:', response.status);
             
             if (response.ok) {
                 const data = await response.json();
                 currentCartId = data.cart._id;
                 CartSession.save(currentCartId);
-                console.log('✅ Carrito creado:', currentCartId);
                 await updateCartDisplay();
                 return true;
             } else {
                 const errorData = await response.json();
-                console.error('❌ Error del servidor:', errorData);
+                console.error('Error del servidor:', errorData);
                 throw new Error(errorData.message || 'Error al crear carrito');
             }
         } catch (error) {
-            console.error('❌ Error creando carrito:', error);
+            console.error('Error creando carrito:', error);
             showAlert('No se pudo crear el carrito: ' + error.message, 'danger');
             return false;
         }
@@ -441,10 +432,8 @@
     }
 
     async function addToCart(productId, productTitle, productPrice, productStock) {
-        console.log('🛒 Agregando al carrito:', productId);
         
         if (!currentCartId) {
-            console.log('⚠️ No hay carrito, creando...');
             const created = await createNewCartInternal();
             if (!created) {
                 return;
@@ -465,7 +454,6 @@
         }
 
         try {
-            console.log(`📤 Enviando ${quantity} unidades al carrito ${currentCartId}`);
             
             for (let i = 0; i < quantity; i++) {
                 const response = await fetch(`/api/carts/${currentCartId}/product/${productId}`, {
@@ -474,8 +462,6 @@
                         'Content-Type': 'application/json'
                     }
                 });
-
-                console.log(`📡 Response ${i + 1}/${quantity}:`, response.status);
 
                 if (!response.ok) {
                     const error = await response.json();
@@ -489,7 +475,7 @@
             CartSession.save(currentCartId);
 
         } catch (error) {
-            console.error('❌ Error agregando producto:', error);
+            console.error('Error agregando producto:', error);
             showAlert('Error: ' + error.message, 'danger');
         }
     }
@@ -585,5 +571,4 @@
     document.getElementById('clearCartBtn').addEventListener('click', clearCart);
     document.getElementById('newCartBtn').addEventListener('click', createNewCart);
 
-    console.log('🛒 Sistema de carrito inicializado');
 </script>

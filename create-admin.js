@@ -9,7 +9,6 @@ dotenv.config();
 async function createAdmin() {
     try {
         await connectDB();
-        console.log('✅ Conectado a MongoDB');
         
         const adminEmail = 'admin@bbfermentos.com';
         
@@ -17,16 +16,11 @@ async function createAdmin() {
         let admin = await User.findOne({ email: adminEmail });
         
         if (admin) {
-            console.log('⚠️ Admin ya existe');
-            console.log('📧 Email:', admin.email);
-            console.log('👤 Nombre:', admin.first_name, admin.last_name);
-            console.log('🔑 Role:', admin.role);
             
             // Actualizar rol si no es admin
             if (admin.role !== 'admin') {
                 admin.role = 'admin';
                 await admin.save();
-                console.log('✅ Rol actualizado a admin');
             }
         } else {
             // Crear carrito para el admin
@@ -44,9 +38,6 @@ async function createAdmin() {
                 cart: cart._id
             });
             
-            console.log('✅ Admin creado exitosamente');
-            console.log('📧 Email:', adminEmail);
-            console.log('🔑 Password: Admin123!');
         }
         
         process.exit(0);

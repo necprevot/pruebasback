@@ -54,7 +54,6 @@
             }
         }
 
-        // ✅ ACTUALIZAR updateAuthUI para manejar roles
         function updateAuthUI() {
             const userData = getUserData();
             const isAuth = isAuthenticated();
@@ -108,7 +107,6 @@
 
         // Inicializar autenticación al cargar cualquier página
         document.addEventListener('DOMContentLoaded', () => {
-            // La función initializeAuth() ya se ejecuta en auth.js
             updateAuthUI();
             
             // Verificar si hay mensajes en la URL

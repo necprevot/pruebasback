@@ -1,4 +1,4 @@
-// src/routes/carts.router.js
+
 import { Router } from 'express';
 import CartManager from '../managers/CartManager.js';
 import { authenticate, authorize } from '../middleware/auth.js';
@@ -6,7 +6,6 @@ import { authenticate, authorize } from '../middleware/auth.js';
 const router = Router();
 const cartManager = new CartManager();
 
-console.log('🛒 [Carts Router] Configurando rutas');
 
 // ====================================
 // RUTAS PÚBLICAS (SIN AUTENTICACIÓN)
@@ -18,7 +17,6 @@ console.log('🛒 [Carts Router] Configurando rutas');
  */
 router.post("/", async (req, res) => {
     try {
-        console.log('🆕 [Cart] Creando nuevo carrito');
         
         const newCart = await cartManager.createCart();
         
@@ -28,7 +26,7 @@ router.post("/", async (req, res) => {
             cart: newCart 
         });
     } catch (error) {
-        console.error('❌ Error creando carrito:', error);
+        console.error('Error creando carrito:', error);
         res.status(500).json({ 
             status: "error", 
             message: "Error al crear el carrito", 
@@ -44,7 +42,6 @@ router.post("/", async (req, res) => {
 router.get("/:cid", async (req, res) => {
     try {
         const { cid } = req.params;
-        console.log('👀 [Cart] Consultando carrito:', cid);
         
         const cart = await cartManager.getCartById(cid);
         
@@ -53,7 +50,7 @@ router.get("/:cid", async (req, res) => {
             cart 
         });
     } catch (error) {
-        console.error('❌ Error obteniendo carrito:', error);
+        console.error('Error obteniendo carrito:', error);
         res.status(404).json({ 
             status: "error", 
             message: error.message 
@@ -68,7 +65,6 @@ router.get("/:cid", async (req, res) => {
 router.post("/:cid/product/:pid", async (req, res) => {
     try {
         const { cid, pid } = req.params;
-        console.log('➕ [Cart] Agregando producto', pid, 'al carrito', cid);
         
         const updatedCart = await cartManager.addProductToCart(cid, pid);
         
@@ -78,7 +74,7 @@ router.post("/:cid/product/:pid", async (req, res) => {
             cart: updatedCart 
         });
     } catch (error) {
-        console.error('❌ Error agregando producto al carrito:', error);
+        console.error('Error agregando producto al carrito:', error);
         res.status(500).json({ 
             status: "error", 
             message: error.message 
@@ -93,7 +89,6 @@ router.post("/:cid/product/:pid", async (req, res) => {
 router.delete("/:cid/product/:pid", async (req, res) => {
     try {
         const { cid, pid } = req.params;
-        console.log('➖ [Cart] Eliminando producto', pid, 'del carrito', cid);
         
         const updatedCart = await cartManager.removeProductFromCart(cid, pid);
         
@@ -103,7 +98,7 @@ router.delete("/:cid/product/:pid", async (req, res) => {
             cart: updatedCart 
         });
     } catch (error) {
-        console.error('❌ Error eliminando producto:', error);
+        console.error('Error eliminando producto:', error);
         res.status(500).json({ 
             status: "error", 
             message: error.message 
@@ -127,8 +122,6 @@ router.put("/:cid/product/:pid", async (req, res) => {
             });
         }
         
-        console.log('🔄 [Cart] Actualizando cantidad de', pid, 'a', quantity);
-        
         const updatedCart = await cartManager.updateProductQuantity(cid, pid, parseInt(quantity));
         
         res.json({ 
@@ -137,7 +130,7 @@ router.put("/:cid/product/:pid", async (req, res) => {
             cart: updatedCart 
         });
     } catch (error) {
-        console.error('❌ Error actualizando cantidad:', error);
+        console.error('Error actualizando cantidad:', error);
         res.status(500).json({ 
             status: "error", 
             message: error.message 
@@ -152,7 +145,6 @@ router.put("/:cid/product/:pid", async (req, res) => {
 router.delete("/:cid", async (req, res) => {
     try {
         const { cid } = req.params;
-        console.log('🗑️ [Cart] Vaciando carrito', cid);
         
         const clearedCart = await cartManager.clearCart(cid);
         
@@ -162,7 +154,7 @@ router.delete("/:cid", async (req, res) => {
             cart: clearedCart 
         });
     } catch (error) {
-        console.error('❌ Error vaciando carrito:', error);
+        console.error('Error vaciando carrito:', error);
         res.status(500).json({ 
             status: "error", 
             message: error.message 
@@ -204,15 +196,13 @@ router.get("/",
     authorize('admin'),
     async (req, res) => {
         try {
-            console.log('👨‍💼 [Admin] Consultando todos los carritos');
-            
             const carts = await cartManager.getAllCarts();
             res.json({ 
                 status: "success", 
                 carts 
             });
         } catch (error) {
-            console.error('❌ Error obteniendo carritos:', error);
+            console.error('Error obteniendo carritos:', error);
             res.status(500).json({ 
                 status: "error", 
                 message: "Error al obtener carritos", 
@@ -221,14 +211,5 @@ router.get("/",
         }
     }
 );
-
-console.log('✅ [Carts Router] Rutas configuradas');
-console.log('   📖 POST   /api/carts                    - Público (crear carrito)');
-console.log('   📖 GET    /api/carts/:cid               - Público (ver carrito)');
-console.log('   📖 POST   /api/carts/:cid/product/:pid  - Público (agregar)');
-console.log('   📖 PUT    /api/carts/:cid/product/:pid  - Público (actualizar)');
-console.log('   📖 DELETE /api/carts/:cid/product/:pid  - Público (eliminar)');
-console.log('   📖 DELETE /api/carts/:cid               - Público (vaciar)');
-console.log('   👨‍💼 GET    /api/carts                    - Solo Admin');
 
 export default router;

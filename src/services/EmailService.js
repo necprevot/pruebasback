@@ -1,8 +1,3 @@
-/**
- * EmailService - Servicio completo de emails
- * Incluye todos los métodos para órdenes, autenticación y notificaciones
- */
-
 import nodemailer from 'nodemailer';
 import { EMAIL_TEMPLATES } from '../config/constants.js';
 
@@ -10,15 +5,12 @@ class EmailService {
     constructor() {
         this.transporter = null;
         this.initializeTransporter();
-        console.log('📧 [EmailService] Servicio de email inicializado');
     }
 
     initializeTransporter() {
         try {
-            console.log('📧 [EmailService] Configurando transportador Gmail...');
             
             if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
-                console.log('⚠️ [EmailService] Variables EMAIL_USER o EMAIL_APP_PASSWORD no configuradas');
                 return;
             }
 
@@ -29,27 +21,22 @@ class EmailService {
                     pass: process.env.EMAIL_APP_PASSWORD
                 }
             });
-
-            console.log('✅ [EmailService] Transportador Gmail configurado');
             
         } catch (error) {
-            console.error('❌ [EmailService] Error:', error.message);
+            console.error(' [EmailService] Error:', error.message);
         }
     }
 
     async verifyConnection() {
         if (!this.transporter) {
-            console.log('❌ [EmailService] Transportador no disponible');
             return false;
         }
 
         try {
-            console.log('🔍 [EmailService] Verificando conexión...');
             await this.transporter.verify();
-            console.log('✅ [EmailService] Conexión verificada');
             return true;
         } catch (error) {
-            console.error('❌ [EmailService] Error verificando:', error.message);
+            console.error(' [EmailService] Error verificando:', error.message);
             return false;
         }
     }
@@ -64,7 +51,6 @@ class EmailService {
         }
 
         try {
-            console.log('📧 [EmailService] Enviando bienvenida a:', userEmail);
             
             const html = this.getWelcomeEmailTemplate(firstName, lastName);
             
@@ -75,7 +61,6 @@ class EmailService {
                 html
             });
 
-            console.log('✅ [EmailService] Bienvenida enviada:', result.messageId);
             return {
                 success: true,
                 messageId: result.messageId,
@@ -83,7 +68,7 @@ class EmailService {
             };
 
         } catch (error) {
-            console.error('❌ [EmailService] Error enviando bienvenida:', error.message);
+            console.error('[EmailService] Error enviando bienvenida:', error.message);
             return {
                 success: false,
                 message: 'Error: ' + error.message
@@ -97,7 +82,6 @@ class EmailService {
         }
 
         try {
-            console.log('📧 [EmailService] Enviando email de reset a:', userEmail);
             
             const resetUrl = `${process.env.WEBSITE_URL || 'http://localhost:8080'}/reset-password/${resetToken}`;
             const html = this.getPasswordResetTemplate(resetUrl);
@@ -109,7 +93,6 @@ class EmailService {
                 html
             });
 
-            console.log('✅ [EmailService] Email de reset enviado:', result.messageId);
             return {
                 success: true,
                 messageId: result.messageId,
@@ -117,7 +100,7 @@ class EmailService {
             };
 
         } catch (error) {
-            console.error('❌ [EmailService] Error enviando email de reset:', error.message);
+            console.error('[EmailService] Error enviando email de reset:', error.message);
             return {
                 success: false,
                 message: 'Error: ' + error.message
@@ -135,7 +118,6 @@ class EmailService {
         }
 
         try {
-            console.log('📧 [EmailService] Enviando confirmación de orden:', order.orderNumber);
             
             const html = this.getOrderConfirmationTemplate(firstName, order);
             
@@ -146,14 +128,13 @@ class EmailService {
                 html
             });
 
-            console.log('✅ [EmailService] Confirmación de orden enviada:', result.messageId);
             return {
                 success: true,
                 messageId: result.messageId
             };
 
         } catch (error) {
-            console.error('❌ [EmailService] Error enviando confirmación:', error.message);
+            console.error('[EmailService] Error enviando confirmación:', error.message);
             return {
                 success: false,
                 message: error.message
@@ -167,7 +148,6 @@ class EmailService {
         }
 
         try {
-            console.log('📧 [EmailService] Enviando notificación de envío:', order.orderNumber);
             
             const html = this.getOrderShippedTemplate(firstName, order);
             
@@ -178,14 +158,13 @@ class EmailService {
                 html
             });
 
-            console.log('✅ [EmailService] Notificación de envío enviada:', result.messageId);
             return {
                 success: true,
                 messageId: result.messageId
             };
 
         } catch (error) {
-            console.error('❌ [EmailService] Error enviando notificación:', error.message);
+            console.error('[EmailService] Error enviando notificación:', error.message);
             return {
                 success: false,
                 message: error.message
@@ -199,7 +178,6 @@ class EmailService {
         }
 
         try {
-            console.log('📧 [EmailService] Enviando notificación de entrega:', order.orderNumber);
             
             const html = this.getOrderDeliveredTemplate(firstName, order);
             
@@ -209,15 +187,13 @@ class EmailService {
                 subject: `🎉 Tu orden ${order.orderNumber} ha sido entregada - BBFermentos`,
                 html
             });
-
-            console.log('✅ [EmailService] Notificación de entrega enviada:', result.messageId);
             return {
                 success: true,
                 messageId: result.messageId
             };
 
         } catch (error) {
-            console.error('❌ [EmailService] Error enviando notificación:', error.message);
+            console.error('[EmailService] Error enviando notificación:', error.message);
             return {
                 success: false,
                 message: error.message
@@ -231,7 +207,6 @@ class EmailService {
         }
 
         try {
-            console.log('📧 [EmailService] Enviando notificación de cancelación:', order.orderNumber);
             
             const html = this.getOrderCancelledTemplate(firstName, order, reason);
             
@@ -242,14 +217,13 @@ class EmailService {
                 html
             });
 
-            console.log('✅ [EmailService] Notificación de cancelación enviada:', result.messageId);
             return {
                 success: true,
                 messageId: result.messageId
             };
 
         } catch (error) {
-            console.error('❌ [EmailService] Error enviando notificación:', error.message);
+            console.error('[EmailService] Error enviando notificación:', error.message);
             return {
                 success: false,
                 message: error.message
@@ -263,7 +237,6 @@ class EmailService {
         }
 
         try {
-            console.log('📧 [EmailService] Enviando confirmación de pago:', order.orderNumber);
             
             const html = this.getPaymentConfirmationTemplate(firstName, order);
             
@@ -274,14 +247,13 @@ class EmailService {
                 html
             });
 
-            console.log('✅ [EmailService] Confirmación de pago enviada:', result.messageId);
             return {
                 success: true,
                 messageId: result.messageId
             };
 
         } catch (error) {
-            console.error('❌ [EmailService] Error enviando confirmación:', error.message);
+            console.error('[EmailService] Error enviando confirmación:', error.message);
             return {
                 success: false,
                 message: error.message
@@ -674,7 +646,6 @@ class EmailService {
         }
 
         try {
-            console.log('📧 [EmailService] Enviando email de prueba a:', toEmail);
             
             const result = await this.transporter.sendMail({
                 from: process.env.EMAIL_USER,
@@ -683,8 +654,6 @@ class EmailService {
                 text: 'Email de prueba desde BBFermentos. ¡El sistema funciona!',
                 html: '<h1>🧪 Prueba BBFermentos</h1><p>Email de prueba. ¡El sistema funciona!</p>'
             });
-
-            console.log('✅ [EmailService] Email enviado:', result.messageId);
             return {
                 success: true,
                 messageId: result.messageId,
@@ -692,7 +661,6 @@ class EmailService {
             };
 
         } catch (error) {
-            console.error('❌ [EmailService] Error enviando:', error.message);
             return {
                 success: false,
                 message: 'Error: ' + error.message
@@ -702,7 +670,6 @@ class EmailService {
 
     async verifyEmailConfiguration() {
         try {
-            console.log('🔍 [EmailService] Verificando configuración de email...');
             
             const config = {
                 hasEmailUser: !!process.env.EMAIL_USER,
@@ -729,7 +696,7 @@ class EmailService {
             };
             
         } catch (error) {
-            console.error('❌ [EmailService] Error verificando configuración:', error.message);
+            console.error('[EmailService] Error verificando configuración:', error.message);
             return {
                 success: false,
                 message: 'Error verificando configuración: ' + error.message

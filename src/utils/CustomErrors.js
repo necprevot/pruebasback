@@ -1,8 +1,3 @@
-/**
- * Sistema de Errores Personalizados
- * Proporciona clases de error especializadas y middleware de manejo
- */
-
 import { HTTP_STATUS, ERROR_MESSAGES } from '../config/constants.js';
 
 // ==========================================
@@ -70,7 +65,7 @@ export class ValidationError extends CustomError {
 }
 
 /**
- * Error 409 - Conflicto (ej: email duplicado)
+ * Error 409 - Conflicto
  */
 export class ConflictError extends CustomError {
   constructor(message) {
@@ -133,10 +128,6 @@ export class DatabaseError extends CustomError {
 // ASYNC HANDLER
 // ==========================================
 
-/**
- * Wrapper para funciones async que maneja errores automáticamente
- * Uso: router.get('/ruta', asyncHandler(async (req, res) => {...}))
- */
 export const asyncHandler = (fn) => {
   return (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
@@ -147,10 +138,6 @@ export const asyncHandler = (fn) => {
 // ERROR HANDLER MIDDLEWARE
 // ==========================================
 
-/**
- * Middleware principal de manejo de errores
- * Debe ir al final de todas las rutas
- */
 export const errorHandler = (err, req, res, next) => {
   console.error('💥 [ErrorHandler] Error capturado:', {
     name: err.name,
@@ -158,7 +145,6 @@ export const errorHandler = (err, req, res, next) => {
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 
-  // Error ya es una instancia de CustomError
   if (err instanceof CustomError) {
     return res.status(err.statusCode).json({
       status: 'error',

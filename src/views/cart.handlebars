@@ -129,9 +129,7 @@ function calculateTotals() {
     
     // Obtener todos los productos del carrito
     const productItems = document.querySelectorAll('.cart-product-item');
-    
-    console.log('🧮 Calculando totales...');
-    console.log('📦 Productos encontrados:', productItems.length);
+
     
     productItems.forEach((item, index) => {
         const quantityInput = item.querySelector('.quantity-input');
@@ -141,13 +139,7 @@ function calculateTotals() {
 
             const quantity = parseInt(quantityInput.value) || 0;
             const subtotal = price * quantity;
-            
-            console.log(`Producto ${index + 1}:`, {
-                id: item.dataset.productId,
-                quantity,
-                price,
-                subtotal
-            });
+
             
             totalItems += quantity;
             totalAmount += subtotal;
@@ -156,7 +148,6 @@ function calculateTotals() {
             const subtotalElement = item.querySelector(`#subtotal-${item.dataset.productId}`);
             if (subtotalElement) {
                 subtotalElement.textContent = Math.round(subtotal);
-                console.log(`💰 Subtotal actualizado para ${item.dataset.productId}: ${subtotal}`);
             }
             
 
@@ -164,20 +155,16 @@ function calculateTotals() {
         }
     });
     
-    console.log('📊 Totales calculados:', { totalItems, totalAmount });
-    
 
     const totalItemsElement = document.getElementById('totalItems');
     const calculatedTotalElement = document.getElementById('calculatedTotal');
     
     if (totalItemsElement) {
         totalItemsElement.textContent = totalItems;
-        console.log('🔢 Total items actualizado en UI:', totalItems);
     }
     
     if (calculatedTotalElement) {
         calculatedTotalElement.textContent = Math.round(totalAmount);
-        console.log('💵 Total amount actualizado en UI:', totalAmount);
     }
     
     return { totalItems, totalAmount };
@@ -185,14 +172,11 @@ function calculateTotals() {
 
 async function syncWithServer() {
     try {
-        console.log('🔄 Sincronizando con servidor...');
         const response = await fetch(`/api/carts/${cartId}`);
         
         if (response.ok) {
             const data = await response.json();
             const serverCart = data.cart;
-            
-            console.log('📡 Datos del servidor:', serverCart);
             
 
             serverCart.products.forEach(serverItem => {
@@ -200,8 +184,7 @@ async function syncWithServer() {
                 const clientQuantity = parseInt(quantityInput?.value || 0);
                 
                 if (clientQuantity !== serverItem.quantity) {
-                    console.log(`⚠️ Diferencia detectada en ${serverItem.product._id}: cliente=${clientQuantity}, servidor=${serverItem.quantity}`);
-                    if (quantityInput) {
+                    
                         quantityInput.value = serverItem.quantity;
                         quantityInput.defaultValue = serverItem.quantity;
                     }
@@ -212,7 +195,7 @@ async function syncWithServer() {
             calculateTotals();
         }
     } catch (error) {
-        console.error('❌ Error sincronizando con servidor:', error);
+        console.error('Error sincronizando con servidor:', error);
     }
 }
 
@@ -225,14 +208,12 @@ function handleQuantityInputChange(productId) {
     
     // Solo actualizar si realmente cambió
     if (newQuantity !== oldQuantity) {
-        console.log(`🔄 Cantidad cambió de ${oldQuantity} a ${newQuantity} para ${productId}`);
         updateQuantity(productId, newQuantity);
     }
 }
 
 // Ejecutar cálculo al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Página cargada, calculando totales...');
     
     // Pequeño delay para asegurar que todo esté renderizado
     setTimeout(() => {
@@ -259,7 +240,6 @@ async function updateQuantity(productId, newQuantity) {
     }
     
     try {
-        console.log(`🔄 Actualizando cantidad de ${productId} a ${newQuantity}`);
         
         const response = await fetch(`/api/carts/${cartId}/product/${productId}`, {
             method: 'PUT',
@@ -270,13 +250,11 @@ async function updateQuantity(productId, newQuantity) {
         });
         
         if (response.ok) {
-            console.log('✅ Cantidad actualizada en servidor');
             
             // Actualizar el dataset del elemento inmediatamente
             const productItem = document.querySelector(`[data-product-id="${productId}"]`);
             if (productItem) {
                 productItem.dataset.quantity = newQuantity;
-                console.log(`📦 Dataset actualizado: quantity=${newQuantity}`);
             }
             
             // Actualizar el input visualmente
@@ -295,7 +273,7 @@ async function updateQuantity(productId, newQuantity) {
             throw new Error(error.message);
         }
     } catch (error) {
-        console.error('❌ Error actualizando cantidad:', error);
+        console.error('Error actualizando cantidad:', error);
         showAlert('Error: ' + error.message, 'danger');
         
         // Restaurar valor anterior en caso de error
@@ -422,27 +400,7 @@ function showAlert(message, type) {
     }, 5000);
 }
 
-// Debug: Mostrar información del carrito en consola
-console.log('🛒 Carrito ID:', cartId);
-console.log('📊 Información de debug disponible en window.cartDebug');
 
-// Función de debug
-window.cartDebug = function() {
-    const productItems = document.querySelectorAll('.cart-product-item');
-    console.log('=== CART DEBUG INFO ===');
-    console.log('Products found:', productItems.length);
-    
-    productItems.forEach((item, index) => {
-        console.log(`Product ${index + 1}:`, {
-            id: item.dataset.productId,
-            quantity: item.dataset.quantity,
-            price: item.dataset.price,
-            currentInputValue: item.querySelector('.quantity-input')?.value
-        });
-    });
-    
-    return calculateTotals();
-};
 
 function setupQuantityControls() {
     // Configurar listeners para inputs de cantidad
@@ -470,8 +428,6 @@ window.updateQuantityByButton = function(productId, delta) {
     const currentQuantity = parseInt(quantityInput.value) || 1;
     const newQuantity = currentQuantity + delta;
     
-    console.log(`🔲 Botón presionado: ${productId}, delta: ${delta}, nueva cantidad: ${newQuantity}`);
-    
     if (newQuantity < 1) {
         if (confirm('¿Quieres eliminar este producto del carrito?')) {
             removeFromCart(productId);
@@ -491,7 +447,6 @@ window.updateQuantityByButton = function(productId, delta) {
 
 // Inicializar cuando se carga la página
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Página cargada, configurando carrito...');
     
     // Configurar controles de cantidad
     setupQuantityControls();
@@ -505,24 +460,4 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(syncWithServer, 30000);
 });
 
-// Debug
-window.cartDebugAdvanced = function() {
-    console.log('=== CART DEBUG AVANZADO ===');
-    
-    const productItems = document.querySelectorAll('.cart-product-item');
-    console.log('Productos en DOM:', productItems.length);
-    
-    productItems.forEach((item, index) => {
-        const quantityInput = item.querySelector('.quantity-input');
-        console.log(`Producto ${index + 1}:`, {
-            id: item.dataset.productId,
-            datasetQuantity: item.dataset.quantity,
-            inputValue: quantityInput?.value,
-            inputDefaultValue: quantityInput?.defaultValue,
-            price: item.dataset.price
-        });
-    });
-    
-    return calculateTotals();
-};
 </script>

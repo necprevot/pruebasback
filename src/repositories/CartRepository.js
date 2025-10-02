@@ -1,7 +1,3 @@
-/**
- * CartRepository - Patrón Repository para Carritos
- * Capa de abstracción entre Service y DAO
- */
 
 import BaseRepository from './BaseRepository.js';
 import CartDAO from '../dao/CartDAO.js';
@@ -10,7 +6,6 @@ class CartRepository extends BaseRepository {
     constructor() {
         const cartDAO = new CartDAO();
         super(cartDAO);
-        console.log('📚 [CartRepository] Repository inicializado con DAO');
     }
 
     /**
@@ -18,10 +13,9 @@ class CartRepository extends BaseRepository {
      */
     async createEmptyCart() {
         try {
-            console.log('🛒 [CartRepository] Creando carrito vacío');
             return await this.dao.createEmptyCart();
         } catch (error) {
-            console.error('❌ [CartRepository] Error creando carrito:', error.message);
+            console.error('[CartRepository] Error creando carrito:', error.message);
             throw error;
         }
     }
@@ -31,10 +25,9 @@ class CartRepository extends BaseRepository {
      */
     async getCartWithProducts(cartId) {
         try {
-            console.log('🛒 [CartRepository] Obteniendo carrito con productos:', cartId);
             return await this.dao.getCartWithProducts(cartId);
         } catch (error) {
-            console.error('❌ [CartRepository] Error obteniendo carrito:', error.message);
+            console.error('[CartRepository] Error obteniendo carrito:', error.message);
             throw error;
         }
     }
@@ -44,7 +37,6 @@ class CartRepository extends BaseRepository {
      */
     async addProductToCart(cartId, productId, quantity = 1) {
         try {
-            console.log('➕ [CartRepository] Agregando producto al carrito');
             
             // Si usas CartManager en lugar de DAO directamente
             const CartManager = (await import('../managers/CartManager.js')).default;
@@ -52,7 +44,7 @@ class CartRepository extends BaseRepository {
             
             return await cartManager.addProductToCart(cartId, productId);
         } catch (error) {
-            console.error('❌ [CartRepository] Error agregando producto:', error.message);
+            console.error(' [CartRepository] Error agregando producto:', error.message);
             throw error;
         }
     }
@@ -61,15 +53,13 @@ class CartRepository extends BaseRepository {
      * Actualizar cantidad de producto
      */
     async updateProductQuantity(cartId, productId, quantity) {
-        try {
-            console.log('🔄 [CartRepository] Actualizando cantidad');
-            
+        try {           
             const CartManager = (await import('../managers/CartManager.js')).default;
             const cartManager = new CartManager();
             
             return await cartManager.updateProductQuantity(cartId, productId, quantity);
         } catch (error) {
-            console.error('❌ [CartRepository] Error actualizando cantidad:', error.message);
+            console.error(' [CartRepository] Error actualizando cantidad:', error.message);
             throw error;
         }
     }
@@ -79,14 +69,13 @@ class CartRepository extends BaseRepository {
      */
     async removeProductFromCart(cartId, productId) {
         try {
-            console.log('➖ [CartRepository] Eliminando producto del carrito');
             
             const CartManager = (await import('../managers/CartManager.js')).default;
             const cartManager = new CartManager();
             
             return await cartManager.removeProductFromCart(cartId, productId);
         } catch (error) {
-            console.error('❌ [CartRepository] Error eliminando producto:', error.message);
+            console.error(' [CartRepository] Error eliminando producto:', error.message);
             throw error;
         }
     }
@@ -96,14 +85,13 @@ class CartRepository extends BaseRepository {
      */
     async clearCart(cartId) {
         try {
-            console.log('🗑️ [CartRepository] Vaciando carrito');
             
             const CartManager = (await import('../managers/CartManager.js')).default;
             const cartManager = new CartManager();
             
             return await cartManager.clearCart(cartId);
         } catch (error) {
-            console.error('❌ [CartRepository] Error vaciando carrito:', error.message);
+            console.error(' [CartRepository] Error vaciando carrito:', error.message);
             throw error;
         }
     }
@@ -116,7 +104,7 @@ class CartRepository extends BaseRepository {
             const cart = await this.getCartWithProducts(cartId);
             return await cart.calculateTotal();
         } catch (error) {
-            console.error('❌ [CartRepository] Error calculando total:', error.message);
+            console.error(' [CartRepository] Error calculando total:', error.message);
             throw error;
         }
     }

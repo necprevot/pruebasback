@@ -1,8 +1,3 @@
-/**
- * Sistema de permisos basado en roles y acciones
- * Permite un control granular de acceso a recursos
- */
-
 import { USER_ROLES, ROLE_PERMISSIONS } from '../config/constants.js';
 import { AuthorizationError, NotFoundError } from '../utils/CustomErrors.js';
 
@@ -14,18 +9,9 @@ export function hasPermission(userRole, permission) {
   return permissions.includes(permission);
 }
 
-/**
- * Middleware para requerir un permiso específico
- * 
- * @param {string} permission - Permiso requerido (ej: 'products:create')
- * @returns {Function} Middleware de Express
- * 
- * @example
- * router.post('/products', authenticate, requirePermission('products:create'), controller);
- */
+
 export function requirePermission(permission) {
   return (req, res, next) => {
-    console.log('🔐 [Permissions] Verificando permiso:', permission);
     
     if (!req.user) {
       throw new AuthorizationError('Usuario no autenticado');
@@ -34,30 +20,18 @@ export function requirePermission(permission) {
     const userRole = req.user.role || USER_ROLES.GUEST;
     
     if (hasPermission(userRole, permission)) {
-      console.log('✅ [Permissions] Permiso concedido:', permission, 'para rol:', userRole);
       return next();
     }
     
-    console.log('❌ [Permissions] Permiso denegado:', permission, 'para rol:', userRole);
     throw new AuthorizationError(
       `No tienes permiso para realizar esta acción. Permiso requerido: ${permission}`
     );
   };
 }
 
-/**
- * Middleware para requerir múltiples permisos (AND)
- * Usuario debe tener TODOS los permisos
- * 
- * @param {...string} permissions - Permisos requeridos
- * @returns {Function} Middleware de Express
- * 
- * @example
- * router.post('/admin/action', authenticate, requireAllPermissions('products:update', 'users:read'), controller);
- */
+
 export function requireAllPermissions(...permissions) {
   return (req, res, next) => {
-    console.log('🔐 [Permissions] Verificando todos los permisos:', permissions);
     
     if (!req.user) {
       throw new AuthorizationError('Usuario no autenticado');
@@ -67,30 +41,18 @@ export function requireAllPermissions(...permissions) {
     const hasAll = permissions.every(permission => hasPermission(userRole, permission));
     
     if (hasAll) {
-      console.log('✅ [Permissions] Todos los permisos concedidos');
       return next();
     }
     
-    console.log('❌ [Permissions] Faltan permisos');
     throw new AuthorizationError(
       `No tienes todos los permisos necesarios para esta acción`
     );
   };
 }
 
-/**
- * Middleware para requerir al menos uno de varios permisos (OR)
- * Usuario debe tener AL MENOS UNO de los permisos
- * 
- * @param {...string} permissions - Permisos requeridos
- * @returns {Function} Middleware de Express
- * 
- * @example
- * router.get('/orders', authenticate, requireAnyPermission('orders:read', 'orders:read_own'), controller);
- */
+
 export function requireAnyPermission(...permissions) {
   return (req, res, next) => {
-    console.log('🔐 [Permissions] Verificando cualquier permiso:', permissions);
     
     if (!req.user) {
       throw new AuthorizationError('Usuario no autenticado');
@@ -100,38 +62,19 @@ export function requireAnyPermission(...permissions) {
     const hasAny = permissions.some(permission => hasPermission(userRole, permission));
     
     if (hasAny) {
-      console.log('✅ [Permissions] Al menos un permiso concedido');
       return next();
     }
     
-    console.log('❌ [Permissions] Ningún permiso concedido');
     throw new AuthorizationError(
       `No tienes ninguno de los permisos necesarios para esta acción`
     );
   };
 }
 
-/**
- * Middleware para verificar propiedad de recurso o ser admin
- * Útil para endpoints donde el usuario puede ver/editar solo sus propios recursos
- * 
- * @param {Function} getResourceOwnerId - Función que obtiene el ID del propietario del recurso
- * @returns {Function} Middleware de Express
- * 
- * @example
- * router.get('/orders/:id', 
- *   authenticate, 
- *   requireOwnershipOrAdmin(async (req) => {
- *     const order = await Order.findById(req.params.id);
- *     return order.user;
- *   }), 
- *   controller
- * );
- */
+
 export function requireOwnershipOrAdmin(getResourceOwnerId) {
   return async (req, res, next) => {
     try {
-      console.log('🔐 [Permissions] Verificando propiedad o admin');
       
       if (!req.user) {
         throw new AuthorizationError('Usuario no autenticado');
@@ -139,7 +82,6 @@ export function requireOwnershipOrAdmin(getResourceOwnerId) {
       
       // Si es admin, permitir acceso
       if (req.user.role === USER_ROLES.ADMIN) {
-        console.log('✅ [Permissions] Usuario es admin, acceso concedido');
         return next();
       }
       
@@ -155,11 +97,9 @@ export function requireOwnershipOrAdmin(getResourceOwnerId) {
       const ownerIdStr = ownerId.toString();
       
       if (userId === ownerIdStr) {
-        console.log('✅ [Permissions] Usuario es propietario, acceso concedido');
         return next();
       }
       
-      console.log('❌ [Permissions] Usuario no es propietario ni admin');
       throw new AuthorizationError('No tienes permiso para acceder a este recurso');
       
     } catch (error) {
@@ -170,7 +110,6 @@ export function requireOwnershipOrAdmin(getResourceOwnerId) {
 
 /**
  * Middleware para permitir acceso solo a recursos propios
- * Similar a requireOwnershipOrAdmin pero sin permitir admin
  * 
  * @param {Function} getResourceOwnerId - Función que obtiene el ID del propietario
  * @returns {Function} Middleware de Express
@@ -178,7 +117,6 @@ export function requireOwnershipOrAdmin(getResourceOwnerId) {
 export function requireOwnership(getResourceOwnerId) {
   return async (req, res, next) => {
     try {
-      console.log('🔐 [Permissions] Verificando propiedad estricta');
       
       if (!req.user) {
         throw new AuthorizationError('Usuario no autenticado');
@@ -194,11 +132,9 @@ export function requireOwnership(getResourceOwnerId) {
       const ownerIdStr = ownerId.toString();
       
       if (userId === ownerIdStr) {
-        console.log('✅ [Permissions] Usuario es propietario');
         return next();
       }
       
-      console.log('❌ [Permissions] Usuario no es propietario');
       throw new AuthorizationError('No tienes permiso para acceder a este recurso');
       
     } catch (error) {
@@ -212,7 +148,6 @@ export function requireOwnership(getResourceOwnerId) {
  * Bloquea acceso si el usuario no es premium o admin
  */
 export function requirePremium(req, res, next) {
-  console.log('💎 [Permissions] Verificando usuario premium');
   
   if (!req.user) {
     throw new AuthorizationError('Usuario no autenticado');
@@ -221,11 +156,9 @@ export function requirePremium(req, res, next) {
   const userRole = req.user.role;
   
   if (userRole === USER_ROLES.PREMIUM || userRole === USER_ROLES.ADMIN) {
-    console.log('✅ [Permissions] Usuario es premium o admin');
     return next();
   }
   
-  console.log('❌ [Permissions] Usuario no es premium');
   throw new AuthorizationError(
     'Esta funcionalidad está disponible solo para usuarios premium. Actualiza tu cuenta para acceder.'
   );
@@ -298,7 +231,6 @@ export function rolBasedRateLimit(limits = {}) {
     res.setHeader('X-RateLimit-Reset', new Date(userLimit.resetTime + limit.window).toISOString());
     
     if (userLimit.count > limit.requests) {
-      console.log('⚠️ [RateLimit] Límite excedido para:', userRole, userId);
       return res.status(429).json({
         status: 'error',
         message: 'Demasiadas solicitudes. Por favor intenta más tarde.',
