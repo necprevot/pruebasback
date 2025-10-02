@@ -363,15 +363,330 @@ async function updateCartDisplay() {
 }
 
 // Proceder al checkout
-function proceedToCheckout() {
+// ==========================================
+// AGREGAR AL FINAL DE cart.handlebars <script>
+// REEMPLAZAR la función proceedToCheckout existente
+// ==========================================
+
+// Proceder al checkout - VERSIÓN COMPLETA
+async function proceedToCheckout() {
     const totals = calculateTotals();
+    
     if (totals.totalItems === 0) {
         showAlert('El carrito está vacío', 'warning');
         return;
     }
-    showAlert('Función de checkout en desarrollo', 'info');
-    // Implementar checkout
+    
+    // Verificar autenticación
+    const token = localStorage.getItem('bbfermentos_auth_token');
+    if (!token) {
+        showAlert('Debes iniciar sesión para realizar una compra', 'warning');
+        // Guardar URL de retorno
+        localStorage.setItem('bbfermentos_redirect_after_login', window.location.href);
+        setTimeout(() => {
+            window.location.href = '/login';
+        }, 1500);
+        return;
+    }
+    
+    // Mostrar modal de checkout
+    showCheckoutModal();
 }
+
+// Mostrar modal de checkout con formulario de dirección
+function showCheckoutModal() {
+    const modalHTML = `
+        <div id="checkoutModal" style="display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #dee2e6; padding-bottom: 15px;">
+                    <h2 style="margin: 0; color: #000;">🛒 Finalizar Compra</h2>
+                    <button onclick="closeCheckoutModal()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #666;">&times;</button>
+                </div>
+
+                <!-- Resumen del carrito -->
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 10px 0;">📦 Resumen del pedido</h4>
+                    <div style="display: flex; justify-content: space-between; margin: 5px 0;">
+                        <span>Items:</span>
+                        <span id="checkoutItems">0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 5px 0; font-weight: bold; font-size: 1.1em; color: #28a745;">
+                        <span>Total:</span>
+                        <span>$<span id="checkoutTotal">0</span></span>
+                    </div>
+                </div>
+
+                <!-- Formulario de dirección -->
+                <form id="checkoutForm" style="margin-bottom: 20px;">
+                    <h4 style="margin: 20px 0 15px 0;">📍 Dirección de Envío</h4>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Calle y Número *</label>
+                        <input type="text" id="street" name="street" required 
+                               style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; box-sizing: border-box;"
+                               placeholder="Av. Siempre Viva 123">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Ciudad *</label>
+                            <input type="text" id="city" name="city" required 
+                                   style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; box-sizing: border-box;"
+                                   placeholder="Santiago">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Región *</label>
+                            <input type="text" id="state" name="state" required 
+                                   style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; box-sizing: border-box;"
+                                   placeholder="Metropolitana">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Código Postal *</label>
+                            <input type="text" id="zipCode" name="zipCode" required 
+                                   style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; box-sizing: border-box;"
+                                   placeholder="8320000">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Teléfono *</label>
+                            <input type="tel" id="phone" name="phone" required 
+                                   style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; box-sizing: border-box;"
+                                   placeholder="+56 9 1234 5678">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">País</label>
+                        <input type="text" id="country" name="country" value="Chile" 
+                               style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; background: #e9ecef; box-sizing: border-box;"
+                               readonly>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Información Adicional</label>
+                        <textarea id="additionalInfo" name="additionalInfo" rows="3"
+                                  style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; box-sizing: border-box;"
+                                  placeholder="Depto, torre, referencias para la entrega..."></textarea>
+                    </div>
+
+                    <h4 style="margin: 20px 0 15px 0;">💳 Método de Pago</h4>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <select id="paymentMethod" name="paymentMethod" required
+                                style="width: 100%; padding: 12px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 1em; box-sizing: border-box;">
+                            <option value="">Selecciona un método de pago</option>
+                            <option value="credit_card">💳 Tarjeta de Crédito</option>
+                            <option value="debit_card">💳 Tarjeta de Débito</option>
+                            <option value="bank_transfer">🏦 Transferencia Bancaria</option>
+                            <option value="cash_on_delivery">💵 Pago contra entrega</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Notas del Pedido</label>
+                        <textarea id="orderNotes" name="notes" rows="2"
+                                  style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; box-sizing: border-box;"
+                                  placeholder="Comentarios adicionales sobre tu pedido..."></textarea>
+                    </div>
+
+                    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px; margin-bottom: 20px;">
+                        <small style="color: #856404;">
+                            <strong>ℹ️ Información:</strong> El envío es GRATIS en compras sobre $50,000. 
+                            Tu pedido será procesado una vez confirmado el pago.
+                        </small>
+                    </div>
+
+                    <div style="display: flex; gap: 15px; justify-content: flex-end;">
+                        <button type="button" onclick="closeCheckoutModal()" 
+                                style="padding: 12px 24px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1em;">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="confirmOrderBtn"
+                                style="padding: 12px 30px; background: linear-gradient(135deg, #28a745, #20c997); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; font-weight: 600;">
+                            <span id="confirmBtnText">✅ Confirmar Pedido</span>
+                            <span id="confirmBtnSpinner" style="display: none;">🔄 Procesando...</span>
+                        </button>
+                    </div>
+                </form>
+
+                <div id="checkoutAlerts"></div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Actualizar resumen
+    const totals = calculateTotals();
+    document.getElementById('checkoutItems').textContent = totals.totalItems + ' productos';
+    document.getElementById('checkoutTotal').textContent = Math.round(totals.totalAmount);
+    
+    // Manejar envío del formulario
+    document.getElementById('checkoutForm').addEventListener('submit', handleCheckoutSubmit);
+}
+
+// Cerrar modal de checkout
+function closeCheckoutModal() {
+    const modal = document.getElementById('checkoutModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Procesar checkout
+async function handleCheckoutSubmit(e) {
+    e.preventDefault();
+    
+    const confirmBtn = document.getElementById('confirmOrderBtn');
+    const btnText = document.getElementById('confirmBtnText');
+    const btnSpinner = document.getElementById('confirmBtnSpinner');
+    
+    // UI de carga
+    confirmBtn.disabled = true;
+    btnText.style.display = 'none';
+    btnSpinner.style.display = 'inline';
+    
+    try {
+        const formData = new FormData(e.target);
+        
+        // Construir objeto de dirección
+        const shippingAddress = {
+            street: formData.get('street'),
+            city: formData.get('city'),
+            state: formData.get('state'),
+            zipCode: formData.get('zipCode'),
+            country: formData.get('country') || 'Chile',
+            phone: formData.get('phone'),
+            additionalInfo: formData.get('additionalInfo') || ''
+        };
+        
+        const paymentMethod = formData.get('paymentMethod');
+        const notes = formData.get('notes') || '';
+        
+        // Validar método de pago
+        if (!paymentMethod) {
+            showCheckoutAlert('Debes seleccionar un método de pago', 'warning');
+            confirmBtn.disabled = false;
+            btnText.style.display = 'inline';
+            btnSpinner.style.display = 'none';
+            return;
+        }
+        
+        // Obtener token de autenticación
+        const token = localStorage.getItem('bbfermentos_auth_token');
+        
+        if (!token) {
+            showCheckoutAlert('Sesión expirada. Redirigiendo al login...', 'error');
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 2000);
+            return;
+        }
+        
+        console.log('📦 Enviando orden al servidor...');
+        
+        // Crear orden en el servidor
+        const response = await fetch('/api/orders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                shippingAddress,
+                paymentMethod,
+                notes
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.status === 'success') {
+            console.log('✅ Orden creada exitosamente:', data.payload);
+            
+            // Cerrar modal
+            closeCheckoutModal();
+            
+            // Mostrar éxito
+            showAlert('✅ ¡Pedido realizado exitosamente! Orden: ' + (data.payload.order?.orderNumber || ''), 'success');
+            
+            // Limpiar carrito y recargar después de un momento
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+            
+        } else {
+            console.error('❌ Error del servidor:', data);
+            
+            // Manejo específico de errores
+            let errorMessage = data.message || 'Error al procesar el pedido';
+            
+            if (data.message && data.message.includes('Stock insuficiente')) {
+                errorMessage = '⚠️ Algunos productos no tienen stock suficiente. Por favor revisa tu carrito.';
+            } else if (data.message && data.message.includes('Carrito')) {
+                errorMessage = '⚠️ ' + data.message;
+            }
+            
+            showCheckoutAlert(errorMessage, 'error');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error en checkout:', error);
+        showCheckoutAlert('Error de conexión. Por favor intenta de nuevo.', 'error');
+    } finally {
+        // Restaurar botón
+        confirmBtn.disabled = false;
+        btnText.style.display = 'inline';
+        btnSpinner.style.display = 'none';
+    }
+}
+
+// Mostrar alertas dentro del modal de checkout
+function showCheckoutAlert(message, type) {
+    const alertContainer = document.getElementById('checkoutAlerts');
+    if (!alertContainer) return;
+    
+    const alertTypes = {
+        success: { class: 'alert-success', icon: '✅' },
+        error: { class: 'alert-danger', icon: '❌' },
+        warning: { class: 'alert-warning', icon: '⚠️' },
+        info: { class: 'alert-info', icon: 'ℹ️' }
+    };
+    
+    const alert = alertTypes[type] || alertTypes.info;
+    
+    const alertHTML = `
+        <div class="alert ${alert.class}" style="margin-top: 15px;">
+            ${alert.icon} ${message}
+            <button onclick="this.parentElement.remove()" class="alert-close">&times;</button>
+        </div>
+    `;
+    
+    alertContainer.innerHTML = alertHTML;
+    
+    setTimeout(() => {
+        const alertElement = alertContainer.querySelector('.alert');
+        if (alertElement) alertElement.remove();
+    }, 5000);
+}
+
+// Cerrar modal al hacer clic fuera
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('checkoutModal');
+    if (modal && e.target === modal) {
+        closeCheckoutModal();
+    }
+});
+
+// Cerrar modal con tecla Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeCheckoutModal();
+    }
+});
 
 // Guardar para después
 function saveForLater() {
