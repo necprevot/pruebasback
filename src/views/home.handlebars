@@ -389,7 +389,7 @@
             await createNewCartInternal();
             
         } catch (error) {
-            console.error('Error inicializando carrito:', error);
+            
             showAlert('Error al inicializar carrito', 'warning');
         }
     }
@@ -413,11 +413,11 @@
                 return true;
             } else {
                 const errorData = await response.json();
-                console.error('Error del servidor:', errorData);
+                
                 throw new Error(errorData.message || 'Error al crear carrito');
             }
         } catch (error) {
-            console.error('Error creando carrito:', error);
+            
             showAlert('No se pudo crear el carrito: ' + error.message, 'danger');
             return false;
         }
@@ -475,7 +475,7 @@
             CartSession.save(currentCartId);
 
         } catch (error) {
-            console.error('Error agregando producto:', error);
+            
             showAlert('Error: ' + error.message, 'danger');
         }
     }
@@ -504,7 +504,7 @@
                 }
             }
         } catch (error) {
-            console.error('Error actualizando carrito:', error);
+            
         }
     }
 
@@ -541,7 +541,7 @@
                     showAlert('Error al limpiar carrito', 'danger');
                 }
             } catch (error) {
-                console.error('Error limpiando carrito:', error);
+                
                 showAlert('Error de conexión', 'danger');
             }
         }

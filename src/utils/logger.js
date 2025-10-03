@@ -4,13 +4,14 @@ export const logger = {
         }
     },
     
-    error: (message) => {
-        console.error(` ${message}`);
+    error: (message, ...args) => {
+        if (process.env.NODE_ENV === 'development') {
+            console.error(`❌ ${message}`, ...args);
+        }
     },
     
     success: (message) => {
         if (process.env.NODE_ENV !== 'production') {
-
         }
     }
 };

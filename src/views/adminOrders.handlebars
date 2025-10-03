@@ -296,7 +296,7 @@ async function viewOrderDetails(orderId) {
             document.getElementById('orderDetailsModal').style.display = 'block';
         }
     } catch (error) {
-        alert('Error al cargar detalles');
+        
     }
 }
 
@@ -320,13 +320,13 @@ async function updateOrderStatus(orderId, newStatus) {
         const data = await response.json();
         
         if (response.ok) {
-            alert('✅ Estado actualizado');
+            
             window.location.reload();
         } else {
-            alert('❌ Error: ' + data.message);
+            
         }
     } catch (error) {
-        alert('Error de conexión');
+        
     }
 }
 
@@ -347,13 +347,13 @@ async function cancelOrder(orderId) {
         const data = await response.json();
         
         if (response.ok) {
-            alert('✅ Orden cancelada');
+            
             window.location.reload();
         } else {
-            alert('❌ Error: ' + data.message);
+            
         }
     } catch (error) {
-        alert('Error de conexión');
+        
     }
 }
 </script>

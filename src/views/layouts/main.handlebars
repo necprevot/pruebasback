@@ -52,7 +52,7 @@
             if (cartId) {
                 window.location.href = `/carts/${cartId}`;
             } else {
-                alert('No tienes un carrito activo. Ve al inicio para crear uno.');
+                
                 window.location.href = '/products';
             }
         }
@@ -71,7 +71,7 @@
                 document.cookie = 'bbfermentos_auth_token=; path=/; max-age=0';
                 
                 // Mostrar mensaje
-                alert('Sesión cerrada exitosamente');
+                
                 
                 // Redirigir
                 window.location.href = '/login';
@@ -133,7 +133,7 @@
             const message = urlParams.get('message');
             
             if (message === 'logged_out') {
-                alert('Sesión cerrada correctamente');
+                
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         });

@@ -3,6 +3,7 @@ import CartDAO from '../dao/CartDAO.js';
 import UserDAO from '../dao/UserDAO.js';
 import Product from '../models/Product.js';
 import emailService from './EmailService.js';
+import { logger } from '../utils/logger.js';
 import { NotFoundError, BusinessError, InsufficientStockError, OrderError} from '../utils/CustomErrors.js';
 import {ORDER_STATUS, PAYMENT_STATUS, LIMITS, ERROR_MESSAGES, SYSTEM_EVENTS} from '../config/constants.js';
 import mongoose from 'mongoose';
@@ -11,6 +12,18 @@ class OrderService {
   constructor() {
     this.cartDAO = new CartDAO();
     this.userDAO = new UserDAO();
+  }
+
+  /**
+   * Helper para enviar emails de forma segura sin bloquear
+   * Los errores son capturados y solo se muestran en desarrollo
+   */
+  async sendEmailSafely(emailPromise, context) {
+    try {
+      await emailPromise;
+    } catch (error) {
+      logger.error(`[OrderService] Error en ${context}:`, error.message);
+    }
   }
 
   async createOrderFromCart(userId, shippingAddress, paymentMethod, notes = '') {
@@ -110,6 +123,7 @@ class OrderService {
 
       // Si hay productos no disponibles, informar pero continuar con los disponibles
       if (unavailableProducts.length > 0) {
+        // Información guardada para retornar al usuario
       }
 
       // Calcular totales
@@ -124,7 +138,7 @@ class OrderService {
         throw new BusinessError(`El monto mínimo de orden es $${LIMITS.MIN_ORDER_AMOUNT}`);
       }
 
-      // 9. Crear la orden
+      // Crear la orden
       const order = new Order({
         user: userId,
         items: orderItems,
@@ -155,8 +169,10 @@ class OrderService {
       
       
       // Enviar email de confirmación (sin bloquear la respuesta)
-      this.sendOrderConfirmationEmail(user.email, user.first_name, order)
-        .catch(err => );
+      this.sendEmailSafely(
+        this.sendOrderConfirmationEmail(user.email, user.first_name, order),
+        'sendOrderConfirmationEmail'
+      );
 
       // Retornar orden con información de productos no disponibles si los hay
       return {
@@ -289,11 +305,15 @@ class OrderService {
 
       // Enviar email según el nuevo estado
       if (newStatus === ORDER_STATUS.SHIPPED) {
-        this.sendOrderShippedEmail(order.user.email, order.user.first_name, order)
-          .catch(err => );
+        this.sendEmailSafely(
+          this.sendOrderShippedEmail(order.user.email, order.user.first_name, order),
+          'sendOrderShippedEmail'
+        );
       } else if (newStatus === ORDER_STATUS.DELIVERED) {
-        this.sendOrderDeliveredEmail(order.user.email, order.user.first_name, order)
-          .catch(err => );
+        this.sendEmailSafely(
+          this.sendOrderDeliveredEmail(order.user.email, order.user.first_name, order),
+          'sendOrderDeliveredEmail'
+        );
       }
 
       return order;
@@ -317,8 +337,10 @@ class OrderService {
       await order.save();
 
       // Enviar email de confirmación de pago
-      this.sendPaymentConfirmationEmail(order.user.email, order.user.first_name, order)
-        .catch(err => );
+      this.sendEmailSafely(
+        this.sendPaymentConfirmationEmail(order.user.email, order.user.first_name, order),
+        'sendPaymentConfirmationEmail'
+      );
 
       return order;
     } catch (error) {
@@ -358,8 +380,10 @@ class OrderService {
       await session.commitTransaction();
 
       // Enviar email de cancelación
-      this.sendOrderCancelledEmail(order.user.email, order.user.first_name, order, reason)
-        .catch(err => );
+      this.sendEmailSafely(
+        this.sendOrderCancelledEmail(order.user.email, order.user.first_name, order, reason),
+        'sendOrderCancelledEmail'
+      );
 
       return order;
     } catch (error) {

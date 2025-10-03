@@ -341,7 +341,7 @@ async function addToCart() {
         CartSession.save(currentCartId);
         
     } catch (error) {
-        console.error('Error agregando al carrito:', error);
+        
         showAlert('Error al agregar producto: ' + error.message, 'danger');
     }
 }
@@ -363,7 +363,7 @@ async function createNewCartInternal() {
             throw new Error('Error al crear carrito');
         }
     } catch (error) {
-        console.error('Error creando carrito:', error);
+        
         showAlert('No se pudo crear el carrito', 'danger');
         return false;
     }
@@ -456,7 +456,7 @@ async function initializeCart() {
             updateCartDisplay();
         }
     } catch (error) {
-        console.error('Error inicializando carrito:', error);
+        
     }
 }
 
@@ -477,7 +477,7 @@ async function updateCartDisplay() {
             }
         }
     } catch (error) {
-        console.error('Error actualizando carrito:', error);
+        
     }
 }
 

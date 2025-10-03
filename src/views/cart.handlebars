@@ -125,7 +125,7 @@ let cartId = '{{cartId}}'.trim();
 
 // Verificar que el cartId sea válido
 if (!cartId || cartId === '[object Object]' || cartId === 'undefined' || cartId === 'null') {
-    console.error(' [Cart] ID de carrito inválido:', cartId);
+    
     
     // Intentar obtener del localStorage
     const storedCartId = localStorage.getItem('bbfermentos_cart_id');
@@ -133,7 +133,7 @@ if (!cartId || cartId === '[object Object]' || cartId === 'undefined' || cartId 
     if (storedCartId && storedCartId !== '[object Object]' && storedCartId !== 'undefined') {
         window.location.href = `/carts/${storedCartId}`;
     } else {
-        console.error(' [Cart] No hay carrito válido almacenado');
+        
         window.location.href = '/products';
     }
     
@@ -205,7 +205,7 @@ async function syncWithServer() {
             calculateTotals();
         }
     } catch (error) {
-        console.error('Error sincronizando con servidor:', error);
+        
     }
 }
 
@@ -282,7 +282,7 @@ async function updateQuantity(productId, newQuantity) {
             throw new Error(error.message);
         }
     } catch (error) {
-        console.error('Error actualizando cantidad:', error);
+        
         showAlert('Error: ' + error.message, 'danger');
         
         const quantityInput = document.getElementById(`quantity-${productId}`);
@@ -322,7 +322,7 @@ async function removeFromCart(productId) {
             showAlert('Error: ' + error.message, 'danger');
         }
     } catch (error) {
-        console.error('Error eliminando producto:', error);
+        
         showAlert('Error de conexión', 'danger');
     }
 }
@@ -356,7 +356,7 @@ async function clearCart() {
             showAlert('Error: ' + error.message, 'danger');
         }
     } catch (error) {
-        console.error('Error vaciando carrito:', error);
+        
         showAlert('Error de conexión', 'danger');
     }
 }
@@ -379,7 +379,7 @@ async function updateCartDisplay() {
             calculateTotals();
         }
     } catch (error) {
-        console.error('Error actualizando carrito:', error);
+        
     }
 }
 
@@ -618,7 +618,7 @@ async function handleCheckoutSubmit(e) {
                 // Verificar que el carrito coincida con el usuario
                 const userData = JSON.parse(localStorage.getItem('bbfermentos_user_data') || '{}');
                 if (userData.cart && userData.cart !== cartId) {
-                    console.warn('⚠️ [Checkout] Carrito no coincide con el usuario');
+                    
                     showCheckoutAlert('⚠️ Hay un problema con tu carrito. Recargando página...', 'warning');
                     setTimeout(() => {
                         localStorage.setItem('bbfermentos_cart_id', userData.cart);
@@ -628,7 +628,7 @@ async function handleCheckoutSubmit(e) {
                 }
             }
         } catch (checkError) {
-            console.error(' [Checkout] Error verificando carrito:', checkError);
+            
             showCheckoutAlert('Error verificando el carrito. Intenta de nuevo.', 'error');
             confirmBtn.disabled = false;
             btnText.style.display = 'inline';
@@ -663,7 +663,7 @@ async function handleCheckoutSubmit(e) {
             }, 2000);
             
         } else {
-            console.error('❌ [Checkout] Error del servidor:', data);
+            
             
             let errorMessage = data.message || 'Error al procesar el pedido';
             
@@ -677,7 +677,7 @@ async function handleCheckoutSubmit(e) {
         }
         
     } catch (error) {
-        console.error('❌ [Checkout] Error en checkout:', error);
+        
         showCheckoutAlert('Error de conexión. Por favor intenta de nuevo.', 'error');
     } finally {
         confirmBtn.disabled = false;

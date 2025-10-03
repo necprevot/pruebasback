@@ -127,8 +127,8 @@
     const token = getAuthToken();
     
     if (!token) {
-        console.error(' No hay token de autenticación');
-        alert('Sesión expirada. Redirigiendo al login...');
+        
+        
         window.location.href = '/login';
     }
     
@@ -194,7 +194,7 @@
         const currentProducts = JSON.parse(sessionStorage.getItem('currentProducts') || '[]');
         const product = currentProducts.find(p => p._id === productId);
         
-        if (!product) return alert('Producto no encontrado');
+        if (!product) return 
         
         document.getElementById('editProductId').value = product._id;
         document.getElementById('editTitle').value = product.title;
@@ -257,9 +257,9 @@
     });
 
     socket.on('error', (error) => {
-        console.error('Error:', error);
+        
         if (error.code === 'FORBIDDEN') {
-            alert('Acceso denegado');
+            
             window.location.href = '/products';
         }
     });
