@@ -141,6 +141,57 @@ if (!cartId || cartId === '[object Object]' || cartId === 'undefined' || cartId 
     throw new Error('CartId inválido');
 }
 
+/**
+ * Objeto para gestionar el carrito en localStorage
+ */
+const CartSession = {
+    save: function(cartId) {
+        if (!cartId || cartId === 'undefined' || cartId === 'null') {
+            console.error('❌ Intentando guardar cartId inválido:', cartId);
+            return;
+        }
+        console.log('💾 Guardando carrito:', cartId);
+        localStorage.setItem('bbfermentos_cart_id', cartId);
+        localStorage.setItem('bbfermentos_cart_timestamp', Date.now().toString());
+    },
+    
+    get: function() {
+        const cartId = localStorage.getItem('bbfermentos_cart_id');
+        const timestamp = localStorage.getItem('bbfermentos_cart_timestamp');
+        
+        if (cartId && timestamp) {
+            const age = Date.now() - parseInt(timestamp);
+            const maxAge = 24 * 60 * 60 * 1000;
+            
+            if (age < maxAge) {
+                return cartId;
+            } else {
+                console.log('⏰ Carrito expirado, limpiando...');
+                this.clear();
+            }
+        }
+        return null;
+    },
+    
+    clear: function() {
+        console.log('🧹 Limpiando carrito del localStorage');
+        localStorage.removeItem('bbfermentos_cart_id');
+        localStorage.removeItem('bbfermentos_cart_timestamp');
+    },
+    
+    verify: async function(cartId) {
+        if (!cartId) return false;
+        try {
+            const response = await fetch(`/api/carts/${cartId}`);
+            return response.ok;
+        } catch (error) {
+            console.error('Error verificando carrito:', error);
+            return false;
+        }
+    }
+};
+
+
 // Funciones de cálculo
 function calculateTotals() {
     let totalItems = 0;
@@ -246,7 +297,6 @@ async function updateQuantity(productId, newQuantity) {
     }
     
     try {
-        // Obtener token si existe
         const token = localStorage.getItem('bbfermentos_auth_token');
         const headers = {
             'Content-Type': 'application/json'
@@ -261,6 +311,52 @@ async function updateQuantity(productId, newQuantity) {
             headers: headers,
             body: JSON.stringify({ quantity: newQuantity })
         });
+        
+        // 🔧 MANEJAR ERROR 403 Y 400
+        if (response.status === 403 || response.status === 400) {
+            const error = await response.json();
+            console.log('⚠️ Error de autorización:', error);
+            
+            // Si el servidor indica un carrito correcto, redirigir
+            if (error.correctCartId) {
+                console.log('🔄 Redirigiendo al carrito correcto...');
+                CartSession.save(error.correctCartId);
+                window.location.href = `/carts/${error.correctCartId}`;
+                return;
+            }
+            
+            // Si es error de autorización sin carrito correcto, recargar usuario
+            showAlert('⚠️ Carrito desincronizado. Recargando...', 'warning');
+            
+            // Intentar obtener info del usuario actual
+            if (token) {
+                try {
+                    const userResponse = await fetch('/api/sessions/current', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (userResponse.ok) {
+                        const userData = await userResponse.json();
+                        const userCartId = userData.payload.cart;
+                        
+                        if (userCartId) {
+                            console.log('✅ Carrito del usuario encontrado:', userCartId);
+                            CartSession.save(userCartId);
+                            window.location.href = `/carts/${userCartId}`;
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error obteniendo usuario:', e);
+                }
+            }
+            
+            // Como último recurso, ir a productos
+            setTimeout(() => {
+                window.location.href = '/products';
+            }, 2000);
+            return;
+        }
         
         if (response.ok) {
             const productItem = document.querySelector(`[data-product-id="${productId}"]`);
@@ -282,7 +378,7 @@ async function updateQuantity(productId, newQuantity) {
             throw new Error(error.message);
         }
     } catch (error) {
-        
+        console.error('Error actualizando cantidad:', error);
         showAlert('Error: ' + error.message, 'danger');
         
         const quantityInput = document.getElementById(`quantity-${productId}`);
@@ -292,6 +388,7 @@ async function updateQuantity(productId, newQuantity) {
         calculateTotals();
     }
 }
+
 
 // Eliminar producto del carrito
 async function removeFromCart(productId) {
@@ -312,6 +409,22 @@ async function removeFromCart(productId) {
             headers: headers
         });
         
+        // 🔧 MANEJAR ERROR 403 Y 400
+        if (response.status === 403 || response.status === 400) {
+            const error = await response.json();
+            
+            if (error.correctCartId) {
+                console.log('🔄 Redirigiendo al carrito correcto...');
+                CartSession.save(error.correctCartId);
+                window.location.href = `/carts/${error.correctCartId}`;
+                return;
+            }
+            
+            showAlert('⚠️ Error de autorización. Recargando...', 'warning');
+            setTimeout(() => window.location.reload(), 1500);
+            return;
+        }
+        
         if (response.ok) {
             showAlert('Producto eliminado del carrito', 'success');
             setTimeout(() => {
@@ -322,7 +435,7 @@ async function removeFromCart(productId) {
             showAlert('Error: ' + error.message, 'danger');
         }
     } catch (error) {
-        
+        console.error('Error eliminando producto:', error);
         showAlert('Error de conexión', 'danger');
     }
 }

@@ -184,7 +184,6 @@ const Auth = {
       if (response.ok && data.status === 'success') {
         Storage.saveAuth(data.payload.token, data.payload.user);
         
-        // Sincronizar carrito
         await this.syncUserCart(data.payload.user);
         
         UI.showAlert('¡Login exitoso!', 'success');
@@ -206,10 +205,11 @@ const Auth = {
   
   async syncUserCart(user) {
     try {
+      console.log('🔄 Iniciando sincronización de carrito...');
+      
       const localCartId = localStorage.getItem('bbfermentos_cart_id');
       
       let userCartId = null;
-      
       if (user.cart) {
         if (typeof user.cart === 'object' && user.cart._id) {
           userCartId = user.cart._id.toString();
@@ -218,46 +218,68 @@ const Auth = {
         }
       }
       
+      console.log('📦 Local Cart:', localCartId);
+      console.log('👤 User Cart:', userCartId);
+      
       if (!userCartId) {
+        console.log('⚠️ Usuario sin carrito');
+        localStorage.removeItem('bbfermentos_cart_id');
         return;
       }
       
-      if (localCartId && localCartId !== userCartId) {
-        try {
-          const localCartResponse = await fetch(`/api/carts/${localCartId}`);
-          if (localCartResponse.ok) {
-            const localCartData = await localCartResponse.json();
-            const localProducts = localCartData.cart.products || [];
+      if (!localCartId || localCartId === userCartId) {
+        console.log('✅ Carrito ya sincronizado');
+        localStorage.setItem('bbfermentos_cart_id', userCartId);
+        localStorage.setItem('bbfermentos_cart_timestamp', Date.now().toString());
+        return;
+      }
+      
+      console.log('🔄 Migrando productos...');
+      
+      try {
+        const localCartResponse = await fetch(`/api/carts/${localCartId}`);
+        
+        if (localCartResponse.ok) {
+          const localCartData = await localCartResponse.json();
+          const localProducts = localCartData.cart.products || [];
+          
+          console.log(`📦 Productos en carrito local: ${localProducts.length}`);
+          
+          if (localProducts.length > 0) {
+            const token = localStorage.getItem('bbfermentos_auth_token');
             
-            if (localProducts.length > 0) {
-              const token = localStorage.getItem('bbfermentos_auth_token');
+            for (const item of localProducts) {
+              const productId = item.product._id || item.product;
+              const quantity = item.quantity;
               
-              for (const item of localProducts) {
-                const productId = item.product._id || item.product;
-                const quantity = item.quantity;
-                
-                for (let i = 0; i < quantity; i++) {
-                  await fetch(`/api/carts/${userCartId}/product/${productId}`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}`
-                    }
-                  });
-                }
-              }
+              console.log(`➕ Agregando ${quantity}x ${productId}`);
               
+              for (let i = 0; i < quantity; i++) {
+                await fetch(`/api/carts/${userCartId}/product/${productId}`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  }
+                });
               }
+            }
+            
+            console.log('✅ Productos migrados');
           }
-        } catch (migrateError) {
-          }
+        }
+      } catch (migrateError) {
+        console.error('❌ Error al migrar productos:', migrateError);
       }
       
       localStorage.setItem('bbfermentos_cart_id', userCartId);
       localStorage.setItem('bbfermentos_cart_timestamp', Date.now().toString());
       
-      } catch (error) {
-      }
+      console.log('✅ Sincronización completada');
+      
+    } catch (error) {
+      console.error('❌ Error en sincronización de carrito:', error);
+    }
   },
   
   async register(userData) {
@@ -330,8 +352,9 @@ const Auth = {
 };
 
 // ==========================================
-// INICIALIZACIÓN
+// FUNCIONES DE INICIALIZACIÓN
 // ==========================================
+
 function initializeLoginForm() {
   const loginForm = document.getElementById('loginForm');
   
@@ -387,10 +410,41 @@ function initializeRegisterForm() {
   }
 }
 
+async function verifyCartOwnership() {
+  const token = Storage.getToken();
+  const user = Storage.getUser();
+  const localCartId = localStorage.getItem('bbfermentos_cart_id');
+  
+  if (!token || !user || !localCartId) return;
+  
+  let userCartId = null;
+  if (user.cart) {
+    if (typeof user.cart === 'object' && user.cart._id) {
+      userCartId = user.cart._id.toString();
+    } else {
+      userCartId = user.cart.toString();
+    }
+  }
+  
+  if (userCartId && localCartId !== userCartId) {
+    console.log('⚠️ Carrito desincronizado');
+    localStorage.setItem('bbfermentos_cart_id', userCartId);
+    
+    if (window.location.pathname.includes('/carts/')) {
+      window.location.href = `/carts/${userCartId}`;
+    }
+  }
+}
+
+// ==========================================
+// INICIALIZACIÓN GLOBAL
+// ==========================================
+
 document.addEventListener('DOMContentLoaded', () => {
   initializeLoginForm();
   initializeRegisterForm();
   Auth.updateUI();
+  verifyCartOwnership();
   
   const token = Storage.getToken();
   if (token) {
@@ -401,6 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 // API PÚBLICA
 // ==========================================
+
 window.BBAuth = {
   login: Auth.login.bind(Auth),
   register: Auth.register.bind(Auth),

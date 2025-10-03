@@ -53,25 +53,30 @@ router.get("/:cid", async (req, res) => {
 /**
  * POST /api/carts/:cid/product/:pid
  * Agregar producto al carrito
- * NOTA: Cambiado a optionalAuth para permitir invitados Y usuarios autenticados
  */
 router.post("/:cid/product/:pid",
-    optionalAuth,  // Autenticación opcional
+    optionalAuth,
     async (req, res) => {
         try {
             const { cid, pid } = req.params;
             
-            // Si hay usuario autenticado, verificar que sea su carrito
+            // 🔧 VERIFICACIÓN MEJORADA DE PERMISOS
             if (req.user) {
+                // Usuario autenticado: verificar que sea su carrito o admin
                 const userCartId = req.user.cart?.toString();
-                if (cid !== userCartId && req.user.role !== 'admin') {
-                    return res.status(403).json({
+                
+                if (req.user.role !== 'admin' && cid !== userCartId) {
+                    console.log(`❌ Permiso denegado. User cart: ${userCartId}, Request cart: ${cid}`);
+                    
+                    // En vez de denegar, redirigir al carrito correcto
+                    return res.status(400).json({
                         status: "error",
-                        message: "No puedes modificar un carrito que no es tuyo"
+                        message: "Usa tu carrito asignado",
+                        correctCartId: userCartId
                     });
                 }
             }
-            // Si no hay usuario, permitir (invitado)
+            // Si no hay usuario (invitado), permitir cualquier carrito
             
             const updatedCart = await cartManager.addProductToCart(cid, pid);
             
